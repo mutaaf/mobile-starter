@@ -1,0 +1,22 @@
+# Smoke flow: launches the app, checks the home screen, moves through the
+# native tab bar to Explore and back. Runs unchanged on iOS and Android.
+appId: com.mutaaf.mobilestarter
+---
+- launchApp:
+    clearState: true
+
+# Home screen
+- assertVisible: 'Try editing'
+- assertVisible: 'Fresh start'
+
+# Navigate to the Explore tab.
+# Asserted by testID, not visible text: on iOS the accessibility label folds in
+# the SF Symbol name ("Expo documentation, arrow.up.right.square"), so a text
+# match passes on Android and fails on iOS.
+- tapOn: 'Explore'
+- assertVisible:
+    id: 'explore-docs-link'
+
+# Back to Home
+- tapOn: 'Home'
+- assertVisible: 'Try editing'

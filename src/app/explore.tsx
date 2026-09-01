@@ -45,7 +45,12 @@ export default function TabTwoScreen() {
           </ThemedText>
 
           <ExternalLink href="https://docs.expo.dev" asChild>
-            <Pressable style={({ pressed }) => pressed && styles.pressed}>
+            {/* testID keeps the E2E flow stable: on iOS the accessibility label
+                folds in the SF Symbol name ("Expo documentation, arrow.up.right.square"),
+                so matching on visible text alone fails there but passes on Android. */}
+            <Pressable
+              testID="explore-docs-link"
+              style={({ pressed }) => pressed && styles.pressed}>
               <ThemedView type="backgroundElement" style={styles.linkButton}>
                 <ThemedText type="link">Expo documentation</ThemedText>
                 <SymbolView
