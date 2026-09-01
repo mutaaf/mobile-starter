@@ -48,16 +48,15 @@
     "test:watch": "jest --watch",
     "e2e:ios": "maestro test .maestro/",
     "e2e:android": "maestro test .maestro/",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run lint && npm test",
+    "test:ci": "jest --ci --coverage"
   },
   "private": true,
   "jest": {
     "preset": "jest-expo",
     "setupFilesAfterEnv": [
       "<rootDir>/jest-setup.ts"
-    ],
-    "transformIgnorePatterns": [
-      "node_modules/(?!(?:.pnpm/)?((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg))"
     ],
     "collectCoverageFrom": [
       "src/**/*.{ts,tsx}",
