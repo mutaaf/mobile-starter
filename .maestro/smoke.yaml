@@ -1,22 +1,108 @@
-# Smoke flow: launches the app, checks the home screen, moves through the
-# native tab bar to Explore and back. Runs unchanged on iOS and Android.
-appId: com.mutaaf.mobilestarter
+# Navigation and static UI across all five tabs. Asserts nothing that depends on
+# network *data*, so a flaky connection can't fail the structural check — but it
+# does wait for each screen to mount, because expo-router mounts tabs lazily and
+# a cleared state means a genuine cold start.
+appId: com.mutaaf.groundstation
 ---
+# Tabs are tapped by point, not by id. Maestro's driver click does not reach
+# React Native Fabric Pressables in this app (a real device tap at the very same
+# coordinates works), so a coordinate tap is the reliable path. Percentages keep
+# it resolution-independent across both platforms; the five tabs are evenly split.
 - launchApp:
     clearState: true
 
-# Home screen
-- assertVisible: 'Try editing'
-- assertVisible: 'Fresh start'
+# expo-router can restore the tab that was active in a previous run, so the flow
+# must not assume it starts on Orbit — navigate there explicitly first.
+- extendedWaitUntil:
+    visible:
+      id: 'devtools-toggle'
+    timeout: 60000
+- tapOn:
+    point: '8%,95%'
 
-# Navigate to the Explore tab.
-# Asserted by testID, not visible text: on iOS the accessibility label folds in
-# the SF Symbol name ("Expo documentation, arrow.up.right.square"), so a text
-# match passes on Android and fails on iOS.
-- tapOn: 'Explore'
+- extendedWaitUntil:
+    visible:
+      id: 'orbit-downlink'
+    timeout: 60000
+
+- tapOn:
+    point: '25%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'seismic-survey'
+    timeout: 20000
+
+- tapOn:
+    point: '42%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'aurora-panel'
+    timeout: 20000
+
+- tapOn:
+    point: '58%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'launch-next'
+    timeout: 20000
+
+- tapOn:
+    point: '75%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'motion-attitude'
+    timeout: 20000
 - assertVisible:
-    id: 'explore-docs-link'
+    id: 'motion-gesture-card'
 
-# Back to Home
-- tapOn: 'Home'
-- assertVisible: 'Try editing'
+# Drag the gesture card; it springs back, so the assertion after it also proves
+# the gesture handler didn't wedge the UI thread.
+- swipe:
+    from:
+      id: 'motion-gesture-card'
+    direction: RIGHT
+- assertVisible:
+    id: 'motion-gesture-card'
+
+- tapOn:
+    point: '92%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'brief-provider'
+    timeout: 20000
+# All three providers must be selectable, and with no key stored the run button
+# stays disabled — no request can be made without one.
+- assertVisible:
+    id: 'provider-anthropic'
+- assertVisible:
+    id: 'provider-openai'
+- assertVisible:
+    id: 'provider-gemini'
+- assertVisible:
+    id: 'brief-output'
+
+- tapOn:
+    point: '8%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'orbit-downlink'
+    timeout: 20000
+
+# The devtools overlay sits above the navigator, so it must survive tab changes
+# and must not swallow touches meant for the app underneath.
+- tapOn:
+    id: 'devtools-toggle'
+- extendedWaitUntil:
+    visible:
+      id: 'devtools-panel'
+    timeout: 15000
+- assertVisible: 'CACHE'
+- assertVisible: 'INJECT'
+- tapOn: 'CLOSE'
+- assertNotVisible:
+    id: 'devtools-panel'
+# The panel fades out; wait rather than racing its exit animation.
+- extendedWaitUntil:
+    visible:
+      id: 'orbit-downlink'
+    timeout: 15000

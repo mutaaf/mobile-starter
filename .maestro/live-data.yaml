@@ -1,0 +1,65 @@
+# Proves the app actually reaches all four upstream APIs and renders real values.
+# Separate from smoke.yaml because it needs network egress.
+appId: com.mutaaf.groundstation
+---
+# Tabs are tapped by point, not by id. Maestro's driver click does not reach
+# React Native Fabric Pressables in this app (a real device tap at the very same
+# coordinates works), so a coordinate tap is the reliable path. Percentages keep
+# it resolution-independent across both platforms; the five tabs are evenly split.
+- launchApp:
+    clearState: true
+
+# expo-router can restore the tab that was active in a previous run, so navigate
+# to Orbit explicitly rather than assuming it is the starting screen.
+- extendedWaitUntil:
+    visible:
+      id: 'devtools-toggle'
+    timeout: 60000
+- tapOn:
+    point: '8%,95%'
+
+# ISS telemetry — wheretheiss.at. Generous timeouts throughout: these are real
+# requests over whatever connection the device has.
+- extendedWaitUntil:
+    visible:
+      id: 'orbit-latitude'
+    timeout: 60000
+- assertVisible:
+    id: 'orbit-plot'
+
+# Earthquakes — USGS.
+- tapOn:
+    point: '25%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'seismic-count'
+    timeout: 30000
+- assertVisible:
+    id: 'quake-row'
+
+# Geomagnetic activity — NOAA SWPC.
+- tapOn:
+    point: '42%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'aurora-current'
+    timeout: 30000
+- assertVisible:
+    id: 'aurora-gauge'
+# Scrubbing the history chart must not crash the gesture handler.
+- swipe:
+    from:
+      id: 'aurora-history'
+    direction: LEFT
+- assertVisible:
+    id: 'aurora-history'
+
+# Launch manifest — Launch Library 2.
+- tapOn:
+    point: '58%,95%'
+- extendedWaitUntil:
+    visible:
+      id: 'launch-next-time'
+    timeout: 30000
+- assertVisible:
+    id: 'launch-row'

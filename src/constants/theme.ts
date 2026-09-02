@@ -1,65 +1,60 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
 import '@/global.css';
 
-import { Platform } from 'react-native';
+/**
+ * Ground Station is a single-theme app on purpose: an instrument console reads
+ * as an instrument console, and a light variant would undermine that. Colors are
+ * flat constants rather than a light/dark pair.
+ */
+export const Palette = {
+  /** Page ground. Near-black, very slightly blue. */
+  void: '#08090B',
+  /** Raised panel. */
+  panel: '#0F1319',
+  /** Panel one step brighter, for nested rows. */
+  panelHi: '#151A22',
+  /** Hairline rules and panel borders. */
+  rule: '#212832',
 
-export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+  text: '#E8EDF2',
+  /** Labels, units, secondary readouts. */
+  dim: '#69747F',
+  /** Barely-there text: axis ticks, disabled states. */
+  faint: '#3A434E',
+
+  /** The single accent. Used sparingly — live values, active states. */
+  signal: '#C6F24E',
+  /** Warnings and high-magnitude events. */
+  alert: '#FF6B4A',
+  /** Informational, non-urgent highlight. */
+  cool: '#4EC8F2',
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
-
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
-  },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
-  },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
-  },
-});
-
-export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
+export const Type = {
+  /** Condensed display face for headings and big numerals. */
+  display: 'ArchivoBlack_400Regular',
+  mono: 'IBMPlexMono_400Regular',
+  monoMedium: 'IBMPlexMono_500Medium',
+  monoBold: 'IBMPlexMono_700Bold',
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
+/** 4pt base scale. */
+export const Space = {
+  hair: 2,
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+  huge: 48,
+} as const;
+
+export const Radius = {
+  sm: 4,
+  md: 8,
+  lg: 14,
+} as const;
+
+/** Tab bar height plus breathing room, so content never sits under it. */
+export const BottomTabInset = 64;
+export const MaxContentWidth = 720;

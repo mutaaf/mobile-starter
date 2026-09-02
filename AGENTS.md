@@ -39,6 +39,58 @@ npm run e2e:android   # Maestro flows against a running Android emulator
 installed, so it is deliberately not part of `verify` — run it explicitly after
 `npm run ios` / `npm run android`.
 
+## Architecture
+
+Data flows one way, and every layer depends on an interface rather than a concrete
+implementation:
+
+```
+screen  →  useResource(key, fetcher)     // subscribes, never fetches
+           ↓
+       ResourceCache                     // lifecycle, dedup, SWR, events
+           ↓
+        CacheStore  (interface)
+           ↓
+     TieredStore → MemoryStore + AsyncStorageStore
+```
+
+- **Screens never fetch.** They call `useResource` with a key from `CacheKeys`
+  and render the returned state. A screen that calls `fetch` directly bypasses
+  dedup, caching and the devtools, and is a bug.
+- **The cache is injected**, via `<CacheProvider>` and `useCache()` — not imported
+  as a module singleton. Tests mount a `MemoryStore`-backed instance.
+- **Stores are swappable.** `CacheStore` is five methods; swapping AsyncStorage
+  for MMKV touches one file.
+- **Adding a data source** means: add a fetcher to `src/lib/api.ts`, add a key to
+  `CacheKeys`, call `useResource`. Nothing else.
+
+Six screens ship. Five run against four keyless public APIs: ISS position
+(wheretheiss.at), earthquakes (USGS), geomagnetic Kp (NOAA SWPC) and the launch
+manifest (Launch Library 2). Each demonstrates a different interaction — live
+polling, a long list, a scrubbable chart, live countdowns — plus on-device
+sensors and gestures on the Motion tab.
+
+The sixth, **Brief**, is bring-your-own-key. `LlmProvider` (`src/lib/llm/types.ts`)
+is the abstraction; Anthropic, OpenAI and Gemini are three implementations over
+plain `fetch` — no vendor SDKs in the bundle, and one place to normalise errors
+and usage. It reads the four feeds straight out of the cache, adds the handset's
+tilt and clock, and asks the user's chosen model for one fused situational
+briefing, so it costs no network calls of its own.
+
+`ResourceCache` owns entry lifecycle, single-flight dedup, stale-while-revalidate,
+pinned overrides, an event log and stats. It knows nothing about what it caches.
+
+## The devtools overlay
+
+A draggable badge (bottom-right) expands into an inspector with four tabs: live
+cache entries with per-key invalidate/release/evict, a cache event timeline,
+UI-thread and JS-thread FPS meters with hit-rate stats, and network injection
+(force offline, fail-next, latency).
+
+Injection goes through `cache.setPolicy()`, so it applies to every screen at once
+and no call site knows it exists. Use it to check loading and error states without
+unplugging anything.
+
 ## Invariants — do not break these
 
 Each of these cost real debugging time. The symptom is listed so you can
@@ -85,8 +137,59 @@ fails on the other. `testID` maps to `accessibilityIdentifier` (iOS) and
 Inspect what the runner actually sees with `maestro hierarchy`.
 
 **7. Do not call `setState` synchronously inside an effect.**
-The React Compiler lint rule rejects it. For a hydration flag use
-`useSyncExternalStore` (see `src/hooks/use-color-scheme.web.ts`).
+The React Compiler lint rule rejects it. To mirror an external source, subscribe
+with `useSyncExternalStore` instead — see `src/hooks/use-resource.ts`. Where an
+effect legitimately kicks off async work, disable the rule on that line with a
+reason; note that `eslint-disable-next-line` must be the *last* line before its
+target, so put the explanation above it.
+
+**8. `cache.getState()` must return a referentially stable object.**
+`useResource` reads it through `useSyncExternalStore`, which re-renders forever if
+`getSnapshot` allocates a new object each call. The empty state is a frozen
+singleton for exactly this reason.
+
+**9. AsyncStorage needs its Jest mock, registered in `jest-setup.ts`.**
+It is a native module with no Node implementation. Symptom if removed: every
+suite that transitively imports the cache dies with
+`NativeModule: AsyncStorage is null`.
+
+**10. Mutate cache policy through `setPolicy()`, never the object.**
+The React Compiler's `react-hooks/immutability` rule rejects assigning to a value
+captured in a handler, and direct mutation would not notify subscribers.
+
+**11. Animate on the UI thread.**
+Use Reanimated shared values and worklets, not `setState` per frame. High-frequency
+sources (sensors, countdowns) must never round-trip through React — the countdown
+timers drive a `TextInput`'s `text` prop through `useAnimatedProps` precisely so
+twenty live timers cost no renders.
+
+**12. A helper called from a worklet must itself be a worklet.**
+Declaring one *inside* a worklet does not make it one; it stays a JS function and
+the UI runtime throws `Tried to synchronously call a Remote Function`. Hoist it to
+module scope with a `'worklet'` directive (see `pad` in `src/app/launch.tsx`).
+
+**13. Start animations in effects, never in `useMemo`.**
+Starting one is a side effect, and React may skip or re-run a memo body —
+especially with the React Compiler enabled. Getting this wrong silently left the
+starfield frozen.
+
+**14. `useFrameCallback` is not a vsync frame counter.**
+It was measured firing ~8x/sec while `adb shell dumpsys gfxinfo` reported a 28ms
+median frame (~35fps), so it cannot back an FPS meter. The devtools badge shows
+**JS-thread** fps (rAF-based, honest); the worklet tick rate is labelled as such.
+For real render statistics use `adb shell dumpsys gfxinfo <package>`.
+
+**15. API keys go in the device keystore, never in the cache.**
+`expo-secure-store` only (Keychain / EncryptedSharedPreferences). The resource
+cache persists to AsyncStorage in plain text and its contents are dumped by the
+devtools panel — a key there would be readable. Keys are never logged, never
+rendered beyond `maskKey`, and never interpolated into a URL (URLs reach logs and
+crash reports; headers do not).
+
+**16. Bind pull-to-refresh to user intent, not to `status`.**
+`status === 'revalidating'` is true for background polls too, which makes the
+spinner flash on every tick. `refresh()` is awaitable — drive a local `pulling`
+state from it.
 
 ## Native projects are generated
 
