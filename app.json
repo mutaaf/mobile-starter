@@ -37,6 +37,26 @@
       ],
       "expo-secure-store",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Ground Station uses the camera to show the sky behind the star overlay."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Ground Station uses your location to work out which stars are above you.",
+          "locationWhenInUsePermission": "Ground Station uses your location to work out which stars are above you."
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Ground Station uses motion to follow where you point the phone."
+        }
+      ],
+      "expo-asset",
+      [
         "./plugins/with-ios-signing",
         {
           "teamId": "95988FTS33"

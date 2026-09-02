@@ -21,6 +21,33 @@ rather than static text.
 | **Launch** | Launch Library 2 manifest | Twenty **live countdowns** ticking from one shared clock, at zero React renders |
 | **Motion** | On-device sensors | Accelerometer/gyroscope bubble level, haptics on crossing level, pan+pinch gesture card |
 | **Brief** | Your own LLM key | Fuses all four feeds **plus** the handset's sensors into one prompt — Anthropic, OpenAI or Gemini, key held in the device keystore |
+| **Sky** (AR) | Camera + compass + star catalogue | Point the phone at the sky: real stars from a J2000 catalogue, constellation figures, the ISS marked where it actually is, and aurora curtains toward the magnetic pole |
+
+### The AR sky view
+
+Reached from Orbit and Aurora. Camera passthrough with a Skia star field drawn
+over it, aligned to true north.
+
+The astronomy is real and it is **pure and unit-tested**, which is the only way to
+be confident about it — you cannot eyeball whether a star is in the right place.
+`src/lib/sky/` does equatorial→horizontal conversion, satellite look angles via
+ECEF, and a gnomonic projection, checked against published values: Polaris's
+altitude must equal your latitude, a star crossing the meridian must sit at
+`90 − lat + dec`, and a satellite overhead must read 90°. 46 tests cover it.
+
+Two things worth knowing:
+
+- **Heading comes from `Location.watchHeadingAsync`, not DeviceMotion.**
+  DeviceMotion's `alpha` is a relative yaw with an arbitrary origin — a sky built
+  on it never aligns to north.
+- **It degrades to drag-to-look.** No simulator has a compass or camera, so
+  without them the view falls back to a synthetic sky you pan by hand. That keeps
+  it E2E-testable rather than hardware-only.
+
+The projection is rectilinear rather than a linear map of angles, because that is
+what a camera lens does — with a linear map the overlay drifts away from the
+passthrough image toward the edges of frame, which is exactly where misalignment
+is obvious.
 
 ### Bring your own key
 

@@ -54,6 +54,9 @@ export default function RootLayout() {
           <Tabs.Screen name="launch" options={{ title: 'Launch' }} />
           <Tabs.Screen name="motion" options={{ title: 'Motion' }} />
           <Tabs.Screen name="brief" options={{ title: 'Brief' }} />
+          {/* Full-screen AR view, reached from Orbit and Aurora. href:null keeps
+              it out of the tab bar without giving up expo-router's file route. */}
+          <Tabs.Screen name="sky" options={{ href: null }} />
         </Tabs>
         <DevTools />
       </CacheProvider>

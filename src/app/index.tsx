@@ -1,6 +1,8 @@
+import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import LottieView from 'lottie-react-native';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -172,6 +174,20 @@ export default function OrbitScreen() {
 
       {data ? <TrackPlot latitude={data.latitude} longitude={data.longitude} /> : null}
 
+      <Reveal delay={210} duration={380}>
+        <Pressable
+          testID="orbit-sky-link"
+          accessibilityRole="button"
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {});
+            router.push({ pathname: '/sky', params: { mode: 'orbit' } });
+          }}
+          style={styles.skyButton}>
+          <Text style={styles.skyButtonText}>OPEN SKY VIEW</Text>
+          <Text style={styles.skyButtonHint}>Point the phone up to find the station</Text>
+        </Pressable>
+      </Reveal>
+
       <Reveal delay={180} duration={380} style={styles.footer}>
         <Label>
           {updatedAt ? `Last fix ${new Date(updatedAt).toLocaleTimeString()}` : 'No fix yet'}
@@ -250,4 +266,20 @@ const styles = StyleSheet.create({
     color: Palette.faint,
   },
   footer: { flexDirection: 'row', justifyContent: 'space-between' },
+  skyButton: {
+    borderWidth: 1,
+    borderColor: Palette.signal,
+    borderRadius: 14,
+    paddingVertical: Space.md,
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#C6F24E0F',
+  },
+  skyButtonText: {
+    fontFamily: Type.monoBold,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    color: Palette.signal,
+  },
+  skyButtonHint: { fontFamily: Type.mono, fontSize: 9, color: Palette.dim },
 });

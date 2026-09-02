@@ -64,6 +64,31 @@ appId: com.mutaaf.groundstation
 - assertVisible:
     id: 'motion-gesture-card'
 
+# Sky view: reachable from Orbit, and must survive a device with no compass —
+# on a simulator it falls back to drag-to-look rather than a dead screen.
+- extendedWaitUntil:
+    visible:
+      id: 'orbit-sky-link'
+    timeout: 20000
+- tapOn:
+    id: 'orbit-sky-link'
+- extendedWaitUntil:
+    visible:
+      id: 'sky-view'
+    timeout: 25000
+- assertVisible:
+    id: 'sky-toggle-figures'
+- assertVisible:
+    id: 'sky-toggle-camera'
+- tapOn:
+    id: 'sky-toggle-figures'
+- tapOn:
+    id: 'sky-close'
+- extendedWaitUntil:
+    visible:
+      id: 'orbit-downlink'
+    timeout: 20000
+
 - tapOn:
     point: '92%,95%'
 - extendedWaitUntil:

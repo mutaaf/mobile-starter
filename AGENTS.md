@@ -70,6 +70,32 @@ manifest (Launch Library 2). Each demonstrates a different interaction — live
 polling, a long list, a scrubbable chart, live countdowns — plus on-device
 sensors and gestures on the Motion tab.
 
+Navigation is a graph, not a tab row: a bar stops scaling past about five items,
+so `ConsoleTabBar` shows only the current feature plus a hub, and `NeuralMenu`
+renders every feature as a node graph whose edges are the real dependencies.
+
+A seventh route, **`/sky`**, is a full-screen AR star view reached from Orbit and
+Aurora. It is hidden from the tab bar with `href: null` rather than living outside
+the router. The astronomy is pure and tested (`src/lib/sky/`): equatorial→horizontal
+conversion, satellite look angles from ECEF, and a gnomonic projection, all checked
+against published values — Polaris's altitude must equal the observer's latitude,
+and a star on the meridian must sit at `90 − lat + dec`. Rendering is Skia; heading
+comes from `Location.watchHeadingAsync` (true north), **not** DeviceMotion's alpha,
+which is a relative yaw with an arbitrary origin and drifts.
+
+The ISS is drawn as NASA's own glTF geometry on the GPU via expo-gl and three.js
+(Metal on iOS, GLES/Vulkan on Android). Its attitude is computed, not invented:
+`src/lib/sky/orientation.ts` derives the local-vertical/local-horizontal frame
+from the velocity between two consecutive fixes, so the station flies nose-along-
+track with its belly to the earth, lit from the real solar direction. The model is
+embedded as base64 (`scripts/embed-model.py` regenerates it) because at 39 KB the
+bundle cost is nothing next to the platform-specific asset-URI bugs it avoids.
+
+Aurora is deliberately *not* a mesh — it is a volumetric emission with no surface,
+so it is drawn as Skia curtains whose direction (the geomagnetic pole bearing) and
+intensity (Kp) are real, rather than pretending a downloaded model would be more
+accurate.
+
 The sixth, **Brief**, is bring-your-own-key. `LlmProvider` (`src/lib/llm/types.ts`)
 is the abstraction; Anthropic, OpenAI and Gemini are three implementations over
 plain `fetch` — no vendor SDKs in the bundle, and one place to normalise errors
@@ -186,7 +212,28 @@ devtools panel — a key there would be readable. Keys are never logged, never
 rendered beyond `maskKey`, and never interpolated into a URL (URLs reach logs and
 crash reports; headers do not).
 
-**16. Bind pull-to-refresh to user intent, not to `status`.**
+**16. Heading must come from `Location.watchHeadingAsync`, not DeviceMotion.**
+DeviceMotion's `alpha` is a *relative* yaw with an arbitrary origin, so a sky built
+on it never aligns to north and drifts as you turn. `watchHeadingAsync` is
+magnetometer-backed and reports true heading. `trueHeading` is `-1` until it has a
+fix — fall back to `magHeading` and say so rather than pointing confidently wrong.
+
+**17. Anything sensor-driven needs a usable path without the sensor.**
+No simulator has a compass, a camera or an accelerometer. The sky view falls back
+to drag-to-look and a synthetic sky; the Motion tab says plainly that there is no
+sensor. A screen that only works on hardware cannot be E2E tested at all.
+
+**18. `THREE.WebGLRenderer` needs `canvas` passed explicitly.**
+Without `parameters.canvas` it creates one via `document`, which React Native
+does not have, and throws `Property 'document' doesn't exist`. Pass the expo-gl
+shim as both the constructor's `canvas` and `context.canvas`.
+
+**19. Navigation lives in `src/lib/nav/graph.ts`.**
+Nodes and edges there are the app's real dataflow, and the menu layout derives
+from them. Adding a feature means adding a node and its true dependencies —
+not drawing a line that looks nice.
+
+**20. Bind pull-to-refresh to user intent, not to `status`.**
 `status === 'revalidating'` is true for background polls too, which makes the
 spinner flash on every tick. `refresh()` is awaitable — drive a local `pulling`
 state from it.
@@ -240,7 +287,6 @@ like it:
 Note that `expo run:ios` **exits 0 on these failures**. Grep the output for
 `error:` rather than trusting the status code; full logs land in
 `.expo/xcodebuild.log`.
-
 
 ## Conventions
 

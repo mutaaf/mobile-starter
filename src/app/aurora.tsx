@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedProps, useDerivedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -192,6 +193,20 @@ export default function AuroraScreen() {
         </Reveal>
       ) : null}
 
+      <Reveal delay={200} duration={380}>
+        <Pressable
+          testID="aurora-sky-link"
+          accessibilityRole="button"
+          onPress={() => {
+            Haptics.selectionAsync().catch(() => {});
+            router.push({ pathname: '/sky', params: { mode: 'aurora' } });
+          }}
+          style={styles.skyButton}>
+          <Text style={styles.skyButtonText}>OPEN SKY VIEW</Text>
+          <Text style={styles.skyButtonHint}>Face the magnetic pole to see the oval</Text>
+        </Pressable>
+      </Reveal>
+
       <View style={styles.footer}>
         <Label tone={source === 'network' ? 'signal' : 'dim'}>
           {source ? `via ${source}` : 'polling 60s'}
@@ -227,4 +242,20 @@ const styles = StyleSheet.create({
   error: { fontFamily: Type.mono, fontSize: 13, color: Palette.alert, lineHeight: 20 },
   placeholder: { fontFamily: Type.mono, fontSize: 13, color: Palette.dim },
   footer: { flexDirection: 'row', justifyContent: 'flex-end' },
+  skyButton: {
+    borderWidth: 1,
+    borderColor: '#3BE08A',
+    borderRadius: 14,
+    paddingVertical: Space.md,
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#3BE08A0F',
+  },
+  skyButtonText: {
+    fontFamily: Type.monoBold,
+    fontSize: 11,
+    letterSpacing: 1.6,
+    color: '#3BE08A',
+  },
+  skyButtonHint: { fontFamily: Type.mono, fontSize: 9, color: Palette.dim },
 });
