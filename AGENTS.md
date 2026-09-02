@@ -206,6 +206,42 @@ npx expo prebuild --clean      # regenerate ios/ and android/
 npm run ios                    # rebuild; JS-only changes never need this
 ```
 
+### iOS code signing survives prebuild
+
+Because `ios/` is regenerated, a development team picked in Xcode's **Signing &
+Capabilities** pane is wiped by the next prebuild, and the build then fails with
+`No signing certificate "iOS Development" found`. `plugins/with-ios-signing.js`
+reapplies `DEVELOPMENT_TEAM` and `CODE_SIGN_STYLE = Automatic` on every prebuild,
+so the fix is durable rather than a manual step.
+
+The team id comes from `APPLE_TEAM_ID` in the environment first, then the
+`teamId` prop in `app.json`; with neither set the plugin is a no-op. **Adopters
+of this kit must set their own** — the id in `app.json` is not portable.
+
+The plugin only restores the *pointer* to the credentials. The certificate lives
+in the login keychain and the profile in
+`~/Library/Developer/Xcode/UserData/Provisioning Profiles/`, both outside the
+repo; create them once by signing into Xcode → Settings → Accounts. Verify with
+`security find-identity -v -p codesigning`. A free Apple ID works, but its
+profiles carry `TimeToLive: 7` — the build expires after a week and must be
+reinstalled.
+
+Two failure modes on a physical device that are *not* signing, despite looking
+like it:
+
+- **`Developer Mode disabled`** — enable it on the handset under Settings →
+  Privacy & Security → Developer Mode, then reboot. Until then `xcrun xctrace
+  list devices` reports the device offline even while `xcrun devicectl list
+  devices` calls it `available (paired)`.
+- **`No device UDID or name matching ...`** — `expo run:ios --device` wants the
+  hardware UDID (`00008130-...`, from `xctrace list devices`), not the CoreDevice
+  UUID that `devicectl list devices` prints in its Identifier column.
+
+Note that `expo run:ios` **exits 0 on these failures**. Grep the output for
+`error:` rather than trusting the status code; full logs land in
+`.expo/xcodebuild.log`.
+
+
 ## Conventions
 
 - **Layout**: routes in `src/app/`, shared UI in `src/components/`, hooks in
