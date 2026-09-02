@@ -66,14 +66,14 @@ export const SkyLabels = memo(function SkyLabels({
     const off: { o: SkyObject; x: number; y: number; rotation: number; away: number }[] = [];
 
     for (const o of objects) {
-      // Below the horizon is only worth an arrow for a target; a star under your
-      // feet is noise.
-      const buried = o.direction.altitude < -3;
-      if (buried && o.priority === 'star') continue;
+      // A star under your feet is noise. A *target* under your feet is usually
+      // the whole point — the ISS spends most of its orbit on the far side of
+      // the earth — so it stays labelled and the chip's altitude says so.
+      if (o.direction.altitude < -3 && o.priority === 'star') continue;
 
       const p = project(o.direction, view, viewport);
 
-      if (p.onScreen && !buried) {
+      if (p.onScreen) {
         on.push({ o, x: p.x, y: p.y });
         continue;
       }

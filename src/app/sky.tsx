@@ -17,6 +17,7 @@ import type { IssPosition, SpaceWeather } from '@/lib/api';
 import {
   bearingTo,
   compassPoint,
+  equatorialToHorizontal,
   GEOMAGNETIC_NORTH,
   normalizeDegrees,
   satelliteLookAngle,
@@ -24,6 +25,7 @@ import {
 } from '@/lib/sky/astro';
 import type { Fix } from '@/lib/sky/orientation';
 import { project } from '@/lib/sky/projection';
+import { STARS } from '@/lib/sky/catalogue';
 import { CacheKeys } from '@/lib/cache';
 import { useCache } from '@/lib/cache/provider';
 
@@ -60,16 +62,19 @@ export default function SkyScreen() {
   // Manual look direction, used when the device has no usable attitude — which
   // is every simulator. Without it this screen would be a dead end in testing.
   const [manual, setManual] = useState({ heading: 0, elevation: 20 });
+  /**
+   * A locked target overrides the compass.
+   *
+   * Most of what this screen points at is below the horizon — the ISS spends
+   * almost all of its time on the far side of the earth. With the compass live
+   * there is physically no way to aim at something 50 degrees under your feet,
+   * so a tap holds the view on it instead and the phone stops driving.
+   */
+  const [lockedId, setLockedId] = useState<string | null>(null);
   const sensorsUsable = attitude.available === true && attitude.hasHeading;
 
   // Memoised: a fresh object each render would invalidate every projection
   // memo downstream, recomputing the whole star field on every sensor tick.
-  const view = useMemo(
-    () =>
-      sensorsUsable ? { heading: attitude.heading, elevation: attitude.elevation } : manual,
-    [sensorsUsable, attitude.heading, attitude.elevation, manual],
-  );
-
   useEffect(() => {
     const sky = setInterval(() => setAt(new Date()), SKY_TICK_MS);
     // Drives the aurora sway. Slow enough to be cheap, fast enough to look alive.
@@ -93,6 +98,8 @@ export default function SkyScreen() {
    */
   const applyDrag = useCallback(
     (dx: number, dy: number) => {
+      // Dragging is an explicit intent to look elsewhere, so it breaks the lock.
+      setLockedId(null);
       setManual((m) => ({
         heading: normalizeDegrees(m.heading - (dx / width) * FOV_X),
         elevation: Math.max(-89, Math.min(89, m.elevation + (dy / height) * 90)),
@@ -102,7 +109,7 @@ export default function SkyScreen() {
   );
 
   const pan = Gesture.Pan()
-    .enabled(!sensorsUsable)
+    .enabled(!sensorsUsable || lockedId !== null)
     // Without a threshold every tap on a label also drags the sky a few degrees,
     // so tapping a target both selects it and moves it off centre.
     .minDistance(12)
@@ -185,6 +192,33 @@ export default function SkyScreen() {
     return list;
   }, [mode, issLook, auroraDirection]);
 
+  /**
+   * A locked target keeps tracking as it moves, so the view follows the ISS
+   * across the sky rather than freezing on where it was when you tapped.
+   */
+  const lockedDirection = useMemo(() => {
+    if (!lockedId) return null;
+
+    if (lockedId.startsWith('star-')) {
+      const found = STARS.find((st) => `star-${st.name}` === lockedId);
+      return found ? equatorialToHorizontal(found.ra, found.dec, observer, at) : null;
+    }
+    return targets.find((t) => t.id === lockedId)?.direction ?? null;
+  }, [lockedId, observer, at, targets]);
+
+  const view = useMemo(() => {
+    // Locked target beats the compass; the compass beats the manual fallback.
+    if (lockedDirection) {
+      return {
+        heading: lockedDirection.azimuth,
+        elevation: Math.max(-89, Math.min(89, lockedDirection.altitude)),
+      };
+    }
+    return sensorsUsable
+      ? { heading: attitude.heading, elevation: attitude.elevation }
+      : manual;
+  }, [lockedDirection, sensorsUsable, attitude.heading, attitude.elevation, manual]);
+
   const viewport = useMemo(() => ({ width, height, fovX: FOV_X }), [width, height]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -199,19 +233,23 @@ export default function SkyScreen() {
    * the view cannot be moved in software — there the tap selects instead, and
    * the card below turns into a turn-by-turn instruction.
    */
-  const onSelectObject = useCallback(
-    (o: SkyObject) => {
-      Haptics.selectionAsync().catch(() => {});
-      setSelectedId(o.id);
-      if (!sensorsUsable) {
-        setManual({
-          heading: o.direction.azimuth,
-          elevation: Math.max(-89, Math.min(89, o.direction.altitude)),
-        });
-      }
-    },
-    [sensorsUsable],
-  );
+  const onSelectObject = useCallback((o: SkyObject) => {
+    Haptics.selectionAsync().catch(() => {});
+    setSelectedId(o.id);
+    // Lock rather than merely centre: with the compass live, centring would be
+    // undone by the next sensor sample, and below-horizon targets are
+    // unreachable by pointing at all.
+    setLockedId(o.id);
+    setManual({
+      heading: o.direction.azimuth,
+      elevation: Math.max(-89, Math.min(89, o.direction.altitude)),
+    });
+  }, []);
+
+  const releaseLock = useCallback(() => {
+    Haptics.selectionAsync().catch(() => {});
+    setLockedId(null);
+  }, []);
 
   const selected = useMemo(
     () => labelTargets.find((t) => t.id === selectedId) ?? null,
@@ -301,7 +339,9 @@ export default function SkyScreen() {
       {/* ---------------------------------------------------------------- HUD */}
       <View style={[styles.top, { paddingTop: insets.top + Space.md }]} pointerEvents="box-none">
         <View style={styles.readout}>
-          <Label tone="signal">{mode === 'aurora' ? 'Aurora sky' : 'Orbit sky'}</Label>
+          <Label tone="signal">
+            {lockedId ? 'Locked' : mode === 'aurora' ? 'Aurora sky' : 'Orbit sky'}
+          </Label>
           <Text style={styles.heading}>
             {compassPoint(view.heading)} {Math.round(view.heading)}°
             <Text style={styles.headingDim}>
@@ -339,7 +379,28 @@ export default function SkyScreen() {
                   : 'No geomagnetic reading cached'}
               </Text>
             ) : null}
-            {hint ? <Text style={styles.hint}>{hint}</Text> : <Text style={styles.onTarget}>On target</Text>}
+            {lockedId ? (
+              <Pressable onPress={releaseLock} testID="sky-unlock" style={styles.unlock}>
+                <Text style={styles.unlockText}>
+                  {primary.direction.altitude < 0
+                    ? 'LOCKED — it is below your horizon, so the compass cannot reach it'
+                    : 'LOCKED — tap to follow the phone again'}
+                </Text>
+              </Pressable>
+            ) : (
+              // The turn hint is the affordance, not just advice: following it by
+              // hand is impossible for anything below the horizon, so tapping it
+              // does the aiming for you.
+              <Pressable
+                onPress={() => onSelectObject(primary)}
+                testID="sky-lock"
+                style={styles.unlock}
+              >
+                <Text style={styles.unlockText}>
+                  {hint ? `${hint.toUpperCase()} — or tap to lock on` : 'ON TARGET — tap to lock on'}
+                </Text>
+              </Pressable>
+            )}
           </View>
         ) : null}
 
@@ -442,8 +503,20 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   cardMeta: { fontFamily: Type.mono, fontSize: 10, color: Palette.dim, lineHeight: 15 },
-  hint: { fontFamily: Type.monoMedium, fontSize: 11, color: Palette.cool, marginTop: 3 },
-  onTarget: { fontFamily: Type.monoMedium, fontSize: 11, color: Palette.signal, marginTop: 3 },
+  unlock: {
+    marginTop: Space.sm,
+    borderWidth: 1,
+    borderColor: Palette.signal,
+    borderRadius: Radius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: Space.sm,
+  },
+  unlockText: {
+    fontFamily: Type.monoMedium,
+    fontSize: 10,
+    color: Palette.signal,
+    lineHeight: 15,
+  },
   notice: {
     backgroundColor: 'rgba(255,107,74,0.14)',
     borderRadius: Radius.md,
