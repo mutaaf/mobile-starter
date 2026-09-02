@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -95,7 +95,7 @@ export default function SkyScreen() {
     (dx: number, dy: number) => {
       setManual((m) => ({
         heading: normalizeDegrees(m.heading - (dx / width) * FOV_X),
-        elevation: Math.max(-30, Math.min(89, m.elevation + (dy / height) * 90)),
+        elevation: Math.max(-89, Math.min(89, m.elevation + (dy / height) * 90)),
       }));
     },
     [width, height],
@@ -103,6 +103,9 @@ export default function SkyScreen() {
 
   const pan = Gesture.Pan()
     .enabled(!sensorsUsable)
+    // Without a threshold every tap on a label also drags the sky a few degrees,
+    // so tapping a target both selects it and moves it off centre.
+    .minDistance(12)
     .onChange((e) => {
       'worklet';
       runOnJS(applyDrag)(e.changeX, e.changeY);
@@ -203,7 +206,7 @@ export default function SkyScreen() {
       if (!sensorsUsable) {
         setManual({
           heading: o.direction.azimuth,
-          elevation: Math.max(-30, Math.min(89, o.direction.altitude)),
+          elevation: Math.max(-89, Math.min(89, o.direction.altitude)),
         });
       }
     },
@@ -222,6 +225,19 @@ export default function SkyScreen() {
         : null,
     [issLook, view, viewport],
   );
+
+  // Without a compass the initial view is arbitrary, and the thing you opened
+  // the screen for is usually off-frame. Point at it once, on first fix.
+  const aimed = useRef(false);
+  useEffect(() => {
+    if (aimed.current || sensorsUsable || targets.length === 0) return;
+    aimed.current = true;
+    const t = targets[0];
+    setManual({
+      heading: t.direction.azimuth,
+      elevation: Math.max(-89, Math.min(89, t.direction.altitude)),
+    });
+  }, [sensorsUsable, targets]);
 
   const primary = selected ?? (targets[0] ? { ...targets[0], priority: 'target' as const } : null);
   const hint = primary ? turnHint(primary.direction, view) : null;

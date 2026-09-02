@@ -2,6 +2,7 @@ import { GLView, type ExpoWebGLRenderingContext } from 'expo-gl';
 import { memo, useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 import { Palette, Type } from '@/constants/theme';
@@ -75,17 +76,43 @@ export const Iss3D = memo(function Iss3D({
       };
       (gl as unknown as { canvas: unknown }).canvas = shim;
 
-      const renderer = new THREE.WebGLRenderer({
-        canvas: shim as unknown as HTMLCanvasElement,
-        context: gl as unknown as WebGLRenderingContext,
-        antialias: true,
-        alpha: true,
-      });
+      /**
+       * three r163+ rejects WebGL1 with:
+       *   `instanceof WebGLRenderingContext` -> throw
+       *
+       * expo-gl's context extends WebGL2RenderingContext — it really is WebGL2 —
+       * but it also satisfies `instanceof WebGLRenderingContext`, so that guard
+       * is a false positive here. Hiding the global across the constructor call
+       * (and only that call) is the narrowest way past it; the alternative is
+       * pinning three to r162 and giving up five years of fixes.
+       */
+      const globals = globalThis as { WebGLRenderingContext?: unknown };
+      const savedWebGL1 = globals.WebGLRenderingContext;
+      delete globals.WebGLRenderingContext;
+
+      let renderer: THREE.WebGLRenderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas: shim as unknown as HTMLCanvasElement,
+          context: gl as unknown as WebGLRenderingContext,
+          antialias: true,
+          alpha: true,
+        });
+      } finally {
+        if (savedWebGL1 !== undefined) globals.WebGLRenderingContext = savedWebGL1;
+      }
       renderer.setSize(width, height);
       renderer.setClearColor(0x000000, 0);
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(28, width / height, 0.1, 1000);
+
+      // The station's hull is metallic, and a metal with nothing to reflect
+      // renders pure black however bright the lights are. A generated room
+      // probe gives it an environment without shipping an HDR file.
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+      scene.environmentIntensity = 0.55;
 
       // Sunlight from the real solar direction, plus a dim earthshine fill so
       // the shadowed side is not a black cut-out.

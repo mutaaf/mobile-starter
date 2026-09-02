@@ -7,10 +7,21 @@ bundle cost is negligible and it removes a whole class of platform-specific
 asset-URI bugs. Keeping this generator means the blob is reproducible rather
 than something a reader has to take on faith.
 
-Re-download the source model first if you need to:
+The NASA original is Draco-compressed (KHR_draco_mesh_compression is in its
+extensionsRequired), and three's GLTFLoader refuses it without a DRACOLoader —
+which would mean shipping a WASM decoder into the app. Decompressing once at
+build time is far cheaper: 40 KB becomes ~288 KB and the runtime needs nothing.
+
+Re-download and decompress the source model first if you need to:
 
   curl -L -o assets/models/iss.glb \\
     "https://raw.githubusercontent.com/nasa/NASA-3D-Resources/master/3D%20Models/International%20Space%20Station%20(ISS)%20(A)/International%20Space%20Station%20(ISS)%20(A).glb"
+
+Then:
+
+  npx @gltf-transform/cli copy assets/models/iss.glb assets/models/iss.glb
+  npx @gltf-transform/cli simplify assets/models/iss.glb assets/models/iss.glb \\
+    --ratio 0.35 --error 0.005
 
 Then:
 
@@ -24,7 +35,6 @@ import json
 import os
 import struct
 import sys
-import textwrap
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -49,7 +59,19 @@ def validate(raw: bytes) -> dict:
     if chunk_type != b"JSON":
         raise SystemExit(f"first chunk is {chunk_type!r}, expected JSON")
 
-    return json.loads(raw[20 : 20 + chunk_len])
+    gltf = json.loads(raw[20 : 20 + chunk_len])
+
+    # A Draco-compressed model loads fine in Blender and fails at runtime, which
+    # is the worst possible time to find out.
+    required = gltf.get("extensionsRequired") or []
+    if "KHR_draco_mesh_compression" in required:
+        raise SystemExit(
+            "model is Draco-compressed; three's GLTFLoader needs a DRACOLoader.\n"
+            "Decompress first:\n"
+            "  npx @gltf-transform/cli copy assets/models/iss.glb assets/models/iss.glb"
+        )
+
+    return gltf
 
 
 HEADER = '''/**
@@ -117,9 +139,12 @@ def main() -> None:
     raw = open(SOURCE, "rb").read()
     gltf = validate(raw)
 
+    # One string literal, not a concatenation. Splitting a few hundred KB of
+    # base64 across thousands of `+` operators builds a binary expression tree
+    # deep enough to blow Babel's parser stack with "Maximum call stack size
+    # exceeded" — which reads like a bundler bug rather than a source problem.
     encoded = base64.b64encode(raw).decode()
-    lines = textwrap.wrap(encoded, 100)
-    body = "\n".join(f"  '{line}' +" for line in lines[:-1]) + f"\n  '{lines[-1]}';"
+    body = f"  '{encoded}';"
 
     meshes = gltf.get("meshes", [])
     header = HEADER.format(
