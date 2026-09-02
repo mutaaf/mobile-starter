@@ -38,6 +38,12 @@ type Props = {
   targets: SkyObject[];
   selectedId: string | null;
   onSelect: (object: SkyObject) => void;
+  /**
+   * Pixels at the top of the frame occupied by the HUD and the status bar. A
+   * chip drawn under either is unreadable, so a star up there is left as a plain
+   * dot rather than a label fighting the readout for the same pixels.
+   */
+  topInset?: number;
 };
 
 export const SkyLabels = memo(function SkyLabels({
@@ -48,6 +54,7 @@ export const SkyLabels = memo(function SkyLabels({
   targets,
   selectedId,
   onSelect,
+  topInset = 0,
 }: Props) {
   const objects = useMemo<SkyObject[]>(() => {
     const named = STARS.filter((s) => s.mag <= NAMEABLE_MAGNITUDE).map((s) => ({
@@ -73,10 +80,13 @@ export const SkyLabels = memo(function SkyLabels({
 
       const p = project(o.direction, view, viewport);
 
-      if (p.onScreen) {
+      if (p.onScreen && (p.y > topInset || o.priority === 'target')) {
         on.push({ o, x: p.x, y: p.y });
         continue;
       }
+      // Under the HUD, and not worth an arrow either: it is on screen, just not
+      // labellable.
+      if (p.onScreen) continue;
 
       const dAz = angularDelta(view.heading, o.direction.azimuth);
       const dAlt = o.direction.altitude - view.elevation;
@@ -100,7 +110,7 @@ export const SkyLabels = memo(function SkyLabels({
       onScreen: on,
       offScreen: separateEdgeIndicators(arrows, viewport.width, viewport.height),
     };
-  }, [objects, view, viewport]);
+  }, [objects, view, viewport, topInset]);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">

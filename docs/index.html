@@ -7,7 +7,7 @@
 <meta name="description" content="An Expo SDK 57 starter kit with a working telemetry demo, a stale-while-revalidate cache, an in-app devtools overlay, and a binding contract for coding agents." />
 
 <meta property="og:title" content="mobile-starter — a React Native kit built to be adopted by agents" />
-<meta property="og:description" content="Expo SDK 57, six live screens, an in-app devtools overlay, and an AGENTS.md contract other agents can read directly." />
+<meta property="og:description" content="Expo SDK 57, seven live screens including an AR sky view, an in-app devtools overlay, and an AGENTS.md contract other agents can read directly." />
 <meta property="og:type" content="website" />
 
 <!-- Machine-readable entry points, declared so an agent can find them from the page itself. -->
@@ -240,6 +240,104 @@
     display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
   }
 
+  /* ------------------------------------------------------------ live sky */
+  .stage {
+    position: relative;
+    margin-top: 44px;
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    overflow: hidden;
+    background: #05070b;
+  }
+  .stage canvas {
+    display: block;
+    width: 100%;
+    height: 420px;
+    cursor: grab;
+    touch-action: none;
+  }
+  @media (max-width: 700px) { .stage canvas { height: 340px; } }
+
+  .stage-view { position: relative; }
+  .hud {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 16px;
+  }
+  .hud-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .hud-read b {
+    display: block;
+    font-size: 22px; font-weight: 700; line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+  .hud-badge {
+    font-size: 9px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: var(--signal);
+  }
+  .hud-badge.idle { color: var(--dim); }
+  .hud-note {
+    font-size: 10.5px; color: var(--dim); text-align: right; max-width: 250px;
+    background: rgba(5,7,11,0.72);
+    border-radius: 6px;
+    padding: 6px 9px;
+  }
+  .hud-read { background: rgba(5,7,11,0.72); border-radius: 6px; padding: 6px 9px; }
+  .hud-bottom { display: flex; gap: 8px; flex-wrap: wrap; pointer-events: auto; }
+  .pill {
+    font-family: var(--mono);
+    font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+    border: 1px solid var(--rule); border-radius: 999px;
+    padding: 7px 13px;
+    background: rgba(8,9,11,0.72); color: var(--dim);
+    cursor: pointer;
+  }
+  .pill:hover { color: var(--text); border-color: var(--dim); }
+  .pill.on { color: var(--signal); border-color: var(--signal); }
+  .pill[disabled] { opacity: .45; cursor: default; }
+
+  /* Telemetry strip under the sky: the raw feed behind what is drawn above. */
+  .tele {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    border-top: 1px solid var(--rule);
+  }
+  @media (min-width: 700px) { .tele { grid-template-columns: repeat(4, 1fr); } }
+  .tele div {
+    padding: 13px 16px;
+    border-right: 1px solid var(--rule);
+    border-top: 1px solid var(--rule);
+  }
+  .tele div:first-child, .tele div:nth-child(2) { border-top: none; }
+  @media (min-width: 700px) { .tele div { border-top: none; } }
+  .tele span {
+    display: block;
+    font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--faint);
+  }
+  .tele b {
+    font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .tele b.live { color: var(--signal); }
+
+  /* ------------------------------------------------------------- gallery */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
+  .shot-wrap { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
+  .phone {
+    flex: none;
+    width: 268px;
+    border: 1px solid var(--rule);
+    border-radius: 26px;
+    padding: 7px;
+    background: linear-gradient(160deg, #1a212b, #0b0e13);
+    box-shadow: 0 24px 60px -24px #000, 0 0 0 1px #ffffff08 inset;
+  }
+  .phone img { display: block; width: 100%; border-radius: 20px; }
+  .shot-note { flex: 1 1 260px; min-width: 240px; }
+  .shot-note h3 { font-size: 16px; }
+  .shot-note .src { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint); }
+  .shot-note p { margin-top: 12px; font-size: 13px; }
+
   @media (prefers-reduced-motion: reduce) {
     .star { animation: none; opacity: .3; }
     html { scroll-behavior: auto; }
@@ -274,7 +372,7 @@
 
     <p class="tagline">
       A React&nbsp;Native kit that is <b>already debugged</b>, and written to be adopted by
-      coding agents as much as by people. Six working screens against live public APIs,
+      coding agents as much as by people. Seven working screens against live public APIs,
       a stale-while-revalidate cache, an in-app devtools overlay — and a contract file
       that tells an agent exactly what it must not break.
     </p>
@@ -282,16 +380,57 @@
     <div class="cta">
       <a class="btn primary" href="https://github.com/mutaaf/mobile-starter">Repository →</a>
       <a class="btn" href="#agents">For agents</a>
+      <a class="btn" href="#gallery">Screenshots</a>
       <a class="btn" href="#screens">What it demos</a>
     </div>
 
     <div class="stats">
-      <div class="stat"><b>6</b><span>screens</span></div>
+      <div class="stat"><b>7</b><span>screens</span></div>
       <div class="stat"><b>5</b><span>live APIs</span></div>
-      <div class="stat"><b>51</b><span>unit tests</span></div>
-      <div class="stat"><b>16</b><span>documented invariants</span></div>
+      <div class="stat"><b>128</b><span>unit tests</span></div>
+      <div class="stat"><b>20</b><span>documented invariants</span></div>
       <div class="stat"><b>2</b><span>E2E flows, both platforms</span></div>
     </div>
+
+    <!-- The live sky. Not a video, not a mock: this canvas runs a port of
+         src/lib/sky/astro.ts and src/lib/sky/projection.ts against the same
+         keyless API the app calls, with the catalogue generated from the app's
+         own source. Drag to look; tap a label to lock onto it. -->
+    <div class="stage">
+      <div class="stage-view">
+      <canvas id="sky" aria-label="Live sky view — drag to look around, tap an object to lock onto it"></canvas>
+
+      <div class="hud">
+        <div class="hud-top">
+          <div class="hud-read">
+            <div class="hud-badge idle" id="sky-mode">Live sky</div>
+            <b id="sky-heading">—</b>
+          </div>
+          <div class="hud-note" id="sky-note">
+            The same astronomy the app runs, in your browser.
+          </div>
+        </div>
+
+        <div class="hud-bottom">
+          <button class="pill" id="btn-iss">Find the ISS</button>
+          <button class="pill" id="btn-here">Use my location</button>
+          <button class="pill" id="btn-free" hidden>Release lock</button>
+        </div>
+      </div>
+      </div>
+
+      <div class="tele">
+        <div><span>Latitude</span><b id="t-lat">—</b></div>
+        <div><span>Longitude</span><b id="t-lon">—</b></div>
+        <div><span>Velocity</span><b class="live" id="t-vel">—</b></div>
+        <div><span>Look angle from you</span><b id="t-look">—</b></div>
+      </div>
+    </div>
+
+    <p style="margin-top:14px;font-size:12px;color:var(--faint)">
+      Drag to look around · tap an object to lock the view onto it · the ISS is usually
+      <em>below</em> your horizon, which is exactly why the app has a lock
+    </p>
   </header>
 
   <!-- ========================================================== AGENTS -->
@@ -302,7 +441,7 @@
       <p>
         The kit ships a contract, not just code. <strong>AGENTS.md</strong> is self-contained:
         an agent working in a different repository can read that one file and apply the same
-        conventions, including the sixteen invariants that each cost real debugging time to find.
+        conventions, including the twenty invariants that each cost real debugging time to find.
       </p>
     </div>
 
@@ -445,6 +584,39 @@ package.json <span class="c">→ jest</span>
           <p>Fuses all four feeds <b style="color:var(--text)">plus the handset's own tilt and clock</b> into one situation report. Your key, held in the device keystore.</p>
         </div>
       </div>
+
+      <div class="panel screen">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M3 20.5 12 3l9 17.5" stroke="#3BE08A" stroke-width="1.6" stroke-linejoin="round" opacity=".55"/><circle cx="12" cy="9.4" r="2.4" stroke="#3BE08A" stroke-width="1.8"/><path d="M7.4 5.2v2M6.4 6.2h2M16.6 13.4v2M15.6 14.4h2" stroke="#3BE08A" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <div>
+          <h3>Sky <span style="color:#3BE08A;font-size:10px;letter-spacing:1px">AR</span></h3>
+          <div class="src">Camera · compass · J2000 catalogue</div>
+          <p>Point the phone up. Real stars, constellation figures, the ISS as NASA's own geometry on the GPU, and aurora curtains toward the magnetic pole. <b style="color:var(--text)">The version at the top of this page is a port of the same maths.</b></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= GALLERY -->
+  <section id="gallery">
+    <div class="head">
+      <div class="label">Not renders</div>
+      <h2>What it looks like</h2>
+      <p>
+        Every frame below is a screenshot of the app running on an iOS simulator against
+        the live feeds — captured by the Maestro flow that ships in the repo, so they
+        cannot quietly go stale while the app changes underneath them.
+      </p>
+    </div>
+
+    <div class="tabs" id="shot-tabs"></div>
+
+    <div class="shot-wrap">
+      <div class="phone"><img id="shot-img" src="./screens/menu.png" alt="" /></div>
+      <div class="shot-note">
+        <h3 id="shot-title"></h3>
+        <div class="src" id="shot-src"></div>
+        <p id="shot-body"></p>
+      </div>
     </div>
   </section>
 
@@ -507,16 +679,16 @@ package.json <span class="c">→ jest</span>
     <div class="grid g2">
       <div class="panel">
         <ul class="checks">
-          <li><b>51 unit tests</b> — cache semantics, API mapping, provider transport, key handling</li>
+          <li><b>128 unit tests</b> — cache semantics, API mapping, provider transport, key handling, astronomy, projection and model decoding</li>
           <li><b>TypeScript strict</b> and <b>ESLint</b> with the React Compiler rules</li>
-          <li><b>2 Maestro flows</b> — one structural, one that hits all four live APIs</li>
+          <li><b>Maestro flows</b> — one structural, one that hits all four live APIs, and a capture flow that regenerates the screenshots on this page</li>
           <li><b>CI on every push</b> — fast checks, plus real Android emulator and iOS simulator jobs</li>
         </ul>
         <div class="code" style="margin-top:18px">npm run verify   <span class="c"># the gate: types + lint + unit</span></div>
       </div>
 
       <div class="panel">
-        <h3>Sixteen invariants, each with its symptom</h3>
+        <h3>Twenty invariants, each with its symptom</h3>
         <p style="font-size:12.5px">
           Written down so a regression is recognised rather than re-derived. A sample:
         </p>
@@ -550,6 +722,8 @@ package.json <span class="c">→ jest</span>
   </footer>
 </div>
 
+<script src="./sky-data.js"></script>
+<script src="./sky.js"></script>
 <script>
   // Deterministic starfield — same seed as the app, so the two look related.
   (function () {
@@ -588,6 +762,176 @@ package.json <span class="c">→ jest</span>
       });
     });
   });
+
+  // --------------------------------------------------------------- gallery
+  (function () {
+    var SHOTS = [
+      { id: 'menu', tab: 'Features', title: 'Feature graph',
+        src: 'The navigation menu',
+        body: 'A row of tabs stops scaling at about five items. So the bar shows only where you are plus a hub, and every feature lives in a graph whose edges are the app’s real data dependencies — Orbit and Aurora both feed Sky because they genuinely do.' },
+      { id: 'orbit', tab: 'Orbit', title: 'Orbit', src: 'wheretheiss.at · 4s polling',
+        body: 'Live ISS telemetry with the ground track interpolated between fixes, so a slow poll still reads as motion rather than a jump every four seconds.' },
+      { id: 'sky', tab: 'Sky (AR)', title: 'Sky', src: 'Camera · compass · J2000 catalogue',
+        body: 'Real stars, constellation figures, and the station marked where it actually is — here locked on, 2,319 km away. Edge chevrons point at what is off frame. The astronomy is pure and unit-tested; you cannot eyeball whether a star is in the right place.' },
+      { id: 'seismic', tab: 'Seismic', title: 'Seismic', src: 'USGS · M2.5+ / 24h',
+        body: 'A long list with magnitude-scaled bars on a fixed scale, so two refreshes stay comparable, and a staggered entrance that costs nothing per row.' },
+      { id: 'aurora', tab: 'Aurora', title: 'Aurora', src: 'NOAA SWPC · planetary Kp',
+        body: 'An SVG gauge grown by stroke-dashoffset in a worklet, plus a scrubbable six-hour sparkline that never touches the JS thread.' },
+      { id: 'launch', tab: 'Launch', title: 'Launch', src: 'Launch Library 2',
+        body: 'Twenty live countdowns ticking from one shared UI-thread clock, driving a TextInput’s text prop through useAnimatedProps — twenty timers, zero React renders.' },
+      { id: 'brief', tab: 'Brief', title: 'Brief', src: 'Anthropic · OpenAI · Gemini',
+        body: 'Bring your own key. It is verified before it is stored, kept in the device keystore rather than the cache, masked in the UI and never put in a URL. The briefing reads the caches the other tabs already filled, so it costs no extra network calls.' },
+      { id: 'motion', tab: 'Motion', title: 'Motion', src: 'On-device sensors',
+        body: 'Shown here on a simulator, which exposes no accelerometer — and the screen says so instead of rendering frozen zeros. Anything sensor-driven needs a usable path without the sensor, or it cannot be tested at all.' },
+    ];
+
+    var tabs = document.getElementById('shot-tabs');
+    var img = document.getElementById('shot-img');
+    var title = document.getElementById('shot-title');
+    var src = document.getElementById('shot-src');
+    var body = document.getElementById('shot-body');
+    if (!tabs) return;
+
+    function show(i) {
+      var s = SHOTS[i];
+      img.src = './screens/' + s.id + '.png';
+      img.alt = s.title + ' screen of the Ground Station demo app';
+      title.textContent = s.title;
+      src.textContent = s.src;
+      body.textContent = s.body;
+      Array.prototype.forEach.call(tabs.children, function (b, n) {
+        b.classList.toggle('on', n === i);
+      });
+    }
+
+    SHOTS.forEach(function (s, i) {
+      var b = document.createElement('button');
+      b.className = 'pill';
+      b.type = 'button';
+      b.textContent = s.tab;
+      b.addEventListener('click', function () { show(i); });
+      tabs.appendChild(b);
+    });
+    show(0);
+  })();
+
+  // -------------------------------------------------------------- live sky
+  (function () {
+    var canvas = document.getElementById('sky');
+    if (!canvas || !window.SkyView) return;
+
+    var sky = new SkyView(canvas, { onState: paint });
+    sky.aimAtSomethingGood();
+    var mode = document.getElementById('sky-mode');
+    var heading = document.getElementById('sky-heading');
+    var note = document.getElementById('sky-note');
+    var free = document.getElementById('btn-free');
+    var tLat = document.getElementById('t-lat');
+    var tLon = document.getElementById('t-lon');
+    var tVel = document.getElementById('t-vel');
+    var tLook = document.getElementById('t-look');
+
+    function paint(s) {
+      heading.textContent = s.compass + ' ' + (Math.round(s.heading) % 360) + '°  ' +
+        (s.elevation >= 0 ? '+' : '') + Math.round(s.elevation) + '°';
+
+      if (s.locked) {
+        mode.textContent = 'Locked';
+        mode.classList.remove('idle');
+        free.hidden = false;
+      } else {
+        mode.textContent = 'Live sky';
+        mode.classList.add('idle');
+        free.hidden = true;
+      }
+
+      if (s.iss) {
+        tLook.textContent = SkyMath.compassPoint(s.iss.direction.azimuth) + ' ' +
+          Math.round(s.iss.direction.azimuth) + '° · ' +
+          Math.round(s.iss.direction.altitude) + '° alt';
+        note.innerHTML = s.iss.visible
+          ? 'The station is <b style="color:var(--signal)">above your horizon</b> right now — ' +
+            Math.round(s.iss.rangeKm).toLocaleString() + ' km away, from ' + s.observerLabel + '.'
+          : 'The station is below your horizon — ' +
+            Math.round(s.iss.rangeKm).toLocaleString() +
+            ' km away through the earth, from ' + s.observerLabel + '. Lock on anyway.';
+      }
+    }
+
+    // Same endpoint, same 4s cadence as the app's Orbit screen.
+    function poll() {
+      fetch('https://api.wheretheiss.at/v1/satellites/25544', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function (d) {
+          sky.setIss(d);
+          // Open on the payoff. Until the first fix arrives there is no station
+          // to point at, so the view starts on the busiest patch of real sky and
+          // snaps to the ISS the moment it knows where it is — unless the reader
+          // has already taken the controls.
+          if (!sky.touched) {
+            sky.locked = 'iss';
+            sky.frame();
+          }
+          tLat.textContent = Math.abs(d.latitude).toFixed(3) + '° ' + (d.latitude >= 0 ? 'N' : 'S');
+          tLon.textContent = Math.abs(d.longitude).toFixed(3) + '° ' + (d.longitude >= 0 ? 'E' : 'W');
+          tVel.textContent = Math.round(d.velocity).toLocaleString() + ' km/h';
+        })
+        .catch(function () {
+          // The feed being down is not a reason for a blank hero: the star field
+          // is computed locally and keeps working without it.
+          tVel.textContent = 'feed unavailable';
+          tVel.classList.remove('live');
+        });
+    }
+    poll();
+    setInterval(poll, 4000);
+
+    // frame() is called directly as well as from the loop: a background tab
+    // gets no requestAnimationFrame at all, and a control that does nothing
+    // until the tab is refocused reads as broken.
+    document.getElementById('btn-iss').addEventListener('click', function () {
+      sky.lock('iss');
+      sky.frame();
+    });
+
+    free.addEventListener('click', function () {
+      sky.release();
+      sky.frame();
+    });
+
+    var here = document.getElementById('btn-here');
+    if (!navigator.geolocation) {
+      here.disabled = true;
+      here.textContent = 'Location unavailable';
+    } else {
+      here.addEventListener('click', function () {
+        here.textContent = 'Locating…';
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            sky.setObserver(
+              { latitude: pos.coords.latitude, longitude: pos.coords.longitude },
+              'your location'
+            );
+            if (!sky.locked) sky.aimAtSomethingGood();
+            here.textContent = 'Using your location';
+            here.classList.add('on');
+          },
+          function () {
+            here.textContent = 'Location declined';
+            here.disabled = true;
+          },
+          { timeout: 8000 }
+        );
+      });
+    }
+
+    // The sky moves at 15 degrees an hour; a frame loop is for the drag and the
+    // lock tracking, not for the stars.
+    (function loop() {
+      sky.frame();
+      requestAnimationFrame(loop);
+    })();
+  })();
 </script>
 </body>
 </html>

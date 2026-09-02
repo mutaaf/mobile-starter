@@ -1,0 +1,167 @@
+# Regenerates the screenshots in docs/screens/ — the ones on the README and the
+# landing page. Deliberately a flow rather than a manual pass: screenshots taken
+# by hand go stale the first time the UI changes and nobody notices, whereas this
+# can be re-run in a minute and always shows the app as it currently is.
+#
+#   npm run capture
+#
+# It is NOT part of `npm run e2e` (the `capture` tag is excluded there), because
+# it asserts almost nothing — its job is to produce images, and a screenshot flow
+# that failed the suite on a rendering nicety would just get deleted.
+#
+# The order below is not arbitrary. Sky is captured last and the menu immediately
+# before it, so the flow never has to navigate *away* from either: the sky view
+# hides the tab bar, and on a simulator the dev-client's floating gear button
+# sits on top of both close controls, so tapping them opens the dev menu instead.
+appId: com.mutaaf.groundstation
+tags:
+  - capture
+---
+- launchApp
+
+# A previous run can leave the app on Sky, which has no tab bar. Two passes:
+# dismiss the dev menu if it is showing, then close the sky view if it is.
+- repeat:
+    times: 2
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: 'xmark'
+          commands:
+            - tapOn:
+                id: 'xmark'
+            - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible:
+              id: 'sky-close'
+          commands:
+            - tapOn:
+                id: 'sky-close'
+            - waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      id: 'nav-hub'
+    timeout: 60000
+- waitForAnimationToEnd
+- takeScreenshot: shots/01-orbit
+
+# Every screen is reached the same way: open the graph menu, focus the node, open
+# it. The first tap focuses and the second opens — the menu's own two-step
+# contract, not a workaround for it.
+- tapOn:
+    id: 'nav-hub'
+- assertVisible: 'Edges are real data dependencies'
+- tapOn:
+    id: 'node-seismic'
+- assertVisible:
+    id: 'menu-detail'
+- tapOn:
+    id: 'menu-open'
+- waitForAnimationToEnd
+- takeScreenshot: shots/03-seismic
+
+# assertVisible waits; a bare tapOn does not, and the menu's fade-out leaves the
+# bar underneath un-hittable for a moment after each navigation.
+- assertVisible:
+    id: 'nav-hub'
+- tapOn:
+    id: 'nav-hub'
+- assertVisible: 'Edges are real data dependencies'
+- tapOn:
+    id: 'node-aurora'
+- assertVisible:
+    id: 'menu-detail'
+- tapOn:
+    id: 'menu-open'
+- waitForAnimationToEnd
+- takeScreenshot: shots/04-aurora
+
+- assertVisible:
+    id: 'nav-hub'
+- tapOn:
+    id: 'nav-hub'
+- assertVisible: 'Edges are real data dependencies'
+- tapOn:
+    id: 'node-launch'
+- assertVisible:
+    id: 'menu-detail'
+- tapOn:
+    id: 'menu-open'
+- waitForAnimationToEnd
+- takeScreenshot: shots/05-launch
+
+- assertVisible:
+    id: 'nav-hub'
+- tapOn:
+    id: 'nav-hub'
+- assertVisible: 'Edges are real data dependencies'
+- tapOn:
+    id: 'node-motion'
+- assertVisible:
+    id: 'menu-detail'
+- tapOn:
+    id: 'menu-open'
+- waitForAnimationToEnd
+- takeScreenshot: shots/06-motion
+
+- assertVisible:
+    id: 'nav-hub'
+- tapOn:
+    id: 'nav-hub'
+- assertVisible: 'Edges are real data dependencies'
+- tapOn:
+    id: 'node-brief'
+- assertVisible:
+    id: 'menu-detail'
+- tapOn:
+    id: 'menu-open'
+- waitForAnimationToEnd
+- takeScreenshot: shots/07-brief
+
+# The menu itself, focused on Sky — then straight through it into Sky.
+- assertVisible:
+    id: 'nav-hub'
+- tapOn:
+    id: 'nav-hub'
+- assertVisible: 'Edges are real data dependencies'
+- tapOn:
+    id: 'node-sky'
+- assertVisible:
+    id: 'menu-detail'
+# The menu fades in over the screen behind it; without settling, the capture
+# catches it half-transparent.
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: shots/02-menu
+
+- tapOn:
+    id: 'menu-open'
+- waitForAnimationToEnd
+# Lock onto the station before capturing. Unlocked, the ISS is usually below the
+# horizon and off frame, so the shot would be an empty sky and a chevron — true,
+# but not what the screen is for.
+- tapOn:
+    id: 'sky-lock'
+# Assert the lock actually took. Without this the flow would happily capture an
+# unlocked sky and the wrong picture would ship — the failure mode a screenshot
+# flow is most prone to.
+- assertVisible:
+    id: 'sky-unlock'
+- waitForAnimationToEnd:
+    timeout: 4000
+# The FPS badge is rAF-based, so a screen that has been deliberately held still
+# reads near zero — an idle number, not a slow one, but it looks like the latter
+# in a still image. Toggling constellations off and back on leaves the screen
+# exactly as it was and guarantees the capture lands on live frames.
+- tapOn:
+    id: 'sky-toggle-figures'
+- tapOn:
+    id: 'sky-toggle-figures'
+- takeScreenshot: shots/08-sky
+
+# Maestro writes screenshots under ~/.maestro/tests/<run>/capture/takeScreenshot/.
+# scripts/collect-screens.sh copies the newest run into docs/screens/ at the
+# width the README and the landing page expect; `npm run capture` does both.

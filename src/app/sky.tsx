@@ -334,6 +334,7 @@ export default function SkyScreen() {
         targets={labelTargets}
         selectedId={selectedId}
         onSelect={onSelectObject}
+        topInset={insets.top + 62}
       />
 
       {/* ---------------------------------------------------------------- HUD */}

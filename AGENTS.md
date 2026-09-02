@@ -33,11 +33,22 @@ npm run android       # build + install + launch on Android emulator
 
 npm run e2e:ios       # Maestro flows against a running iOS simulator
 npm run e2e:android   # Maestro flows against a running Android emulator
+
+npm run capture       # regenerate docs/screens/*.png from a running simulator
 ```
 
 `npm run verify` is the gate. E2E needs a booted device with the app already
 installed, so it is deliberately not part of `verify` — run it explicitly after
 `npm run ios` / `npm run android`.
+
+`npm run capture` is the same idea for pictures. `.maestro/capture.yaml` walks
+every screen and screenshots it, then `scripts/collect-screens.sh` copies the run
+into `docs/screens/` at the width the README and the landing page use. It carries
+the `capture` tag and `e2e:*` excludes that tag, because it asserts almost
+nothing — its job is images, and a screenshot flow that failed the suite over a
+rendering nicety would just get deleted. Re-run it whenever a screen changes
+shape; screenshots taken by hand go stale the first time the UI moves and nobody
+notices.
 
 ## Architecture
 
@@ -237,6 +248,26 @@ not drawing a line that looks nice.
 `status === 'revalidating'` is true for background polls too, which makes the
 spinner flash on every tick. `refresh()` is awaitable — drive a local `pulling`
 state from it.
+
+## The landing page is generated from the app
+
+`docs/` is the GitHub Pages site. Two things in it derive from the app rather
+than restating it, and both have generators that must be re-run rather than
+hand-patched:
+
+- **`docs/sky-data.js`** — the star catalogue and constellation figures the
+  landing page's live sky draws, built from `src/lib/sky/catalogue.ts` by
+  `scripts/build-landing-data.py`. Hand-copying would work exactly once: a star
+  added to the app would never reach the site and nothing would fail.
+- **`docs/screens/*.png`** — real screenshots, produced by `npm run capture`.
+
+`docs/sky.js` is a **port** of `src/lib/sky/astro.ts` and
+`src/lib/sky/projection.ts`, not a copy of the compiled output — a static page
+cannot import TypeScript, and adding a bundler to avoid ~120 lines of duplication
+would be a worse trade than the duplication. If you change the astronomy, change
+both; the numbers on the page are checkable against the app's own tests. The page
+calls the same keyless ISS endpoint (`api.wheretheiss.at`) the Orbit screen does,
+so it is live rather than canned.
 
 ## Native projects are generated
 

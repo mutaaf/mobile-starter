@@ -32,7 +32,8 @@
     "runIos": "npm run ios",
     "runAndroid": "npm run android",
     "e2eIos": "npm run e2e:ios",
-    "e2eAndroid": "npm run e2e:android"
+    "e2eAndroid": "npm run e2e:android",
+    "capture": "npm run capture"
   },
   "adoption": {
     "newApp": "npx degit mutaaf/mobile-starter my-app",

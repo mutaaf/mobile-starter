@@ -1,11 +1,53 @@
-# mobile-starter
+<h1 align="center">mobile-starter</h1>
 
-A React Native starter kit on **Expo SDK 57** (RN 0.86, React 19) with unit tests,
-E2E tests, typechecking and linting — verified green on a real iOS simulator and a
-real Android emulator, not just in theory.
+<p align="center">
+  <b>A React Native kit that is already debugged</b><br />
+  Expo SDK 57 · RN 0.86 · React 19 — written to be adopted by coding agents as much as by people
+</p>
 
-It exists so that other projects, and the agents working in them, can adopt a
-mobile setup that is already debugged.
+<p align="center">
+  <a href="https://github.com/mutaaf/mobile-starter/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/mutaaf/mobile-starter/actions/workflows/ci.yml/badge.svg" /></a>
+  <img alt="Expo SDK 57" src="https://img.shields.io/badge/Expo-SDK%2057-000?logo=expo&logoColor=white" />
+  <img alt="React Native 0.86" src="https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black" />
+  <img alt="128 tests" src="https://img.shields.io/badge/tests-128%20passing-c6f24e" />
+  <img alt="TypeScript strict" src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white" />
+  <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-69747f" /></a>
+</p>
+
+<p align="center">
+  <a href="https://mutaaf.github.io/mobile-starter/"><b>▶ Live demo</b></a> — the landing page runs the app's real
+  astronomy against the app's real API, so you can drag the sky around and lock onto the ISS in your browser
+  <br />
+  <a href="AGENTS.md">AGENTS.md</a> ·
+  <a href="docs/ADOPTING.md">Adopting this</a> ·
+  <a href="https://mutaaf.github.io/mobile-starter/llms.txt">llms.txt</a> ·
+  <a href="https://mutaaf.github.io/mobile-starter/agents.json">agents.json</a>
+</p>
+
+<p align="center">
+  <img src="docs/screens/menu.png" width="230" alt="Feature graph menu — every feature as a node, edges are real data dependencies" />
+  <img src="docs/screens/sky.png" width="230" alt="AR sky view with the ISS locked, 2,319 km away" />
+  <img src="docs/screens/orbit.png" width="230" alt="Live ISS telemetry" />
+</p>
+
+<p align="center">
+  <sub>Real screenshots from an iOS simulator against the live feeds, captured by a Maestro flow in this repo —
+  <a href="https://mutaaf.github.io/mobile-starter/#gallery">all eight screens</a></sub>
+</p>
+
+---
+
+```bash
+npx degit mutaaf/mobile-starter my-app
+cd my-app && npm install
+npm run verify          # 128 tests, typecheck, lint — green before you touch anything
+npm run ios             # or: npm run android
+```
+
+Unit tests, E2E tests, typechecking and linting, all verified green on a real iOS
+simulator and a real Android emulator — not just in theory. It exists so that other
+projects, and the agents working in them, can adopt a mobile setup that is already
+debugged.
 
 ## The demo app: Ground Station
 
@@ -33,7 +75,8 @@ be confident about it — you cannot eyeball whether a star is in the right plac
 `src/lib/sky/` does equatorial→horizontal conversion, satellite look angles via
 ECEF, and a gnomonic projection, checked against published values: Polaris's
 altitude must equal your latitude, a star crossing the meridian must sit at
-`90 − lat + dec`, and a satellite overhead must read 90°. 46 tests cover it.
+`90 − lat + dec`, and a satellite overhead must read 90°. 70 tests cover
+`src/lib/sky` alone.
 
 Two things worth knowing:
 
@@ -74,16 +117,20 @@ editable as code.
 Everything degrades honestly: the Motion tab detects that simulators expose no
 accelerometer and says so instead of showing frozen zeros.
 
-**Landing page:** <https://mutaaf.github.io/mobile-starter/> — with machine-readable
-[`llms.txt`](https://mutaaf.github.io/mobile-starter/llms.txt) and
-[`agents.json`](https://mutaaf.github.io/mobile-starter/agents.json) for agents.
+<details>
+<summary><b>All eight screens</b> — click to expand</summary>
+<br />
 
-```bash
-npx degit mutaaf/mobile-starter my-app
-cd my-app && npm install
-npm run verify
-npm run ios          # or: npm run android
-```
+| | | |
+|:--:|:--:|:--:|
+| <img src="docs/screens/orbit.png" width="200" alt="Orbit" /> | <img src="docs/screens/seismic.png" width="200" alt="Seismic" /> | <img src="docs/screens/aurora.png" width="200" alt="Aurora" /> |
+| **Orbit** — live ISS telemetry, interpolated ground track | **Seismic** — magnitude-scaled bars on a fixed scale | **Aurora** — worklet gauge, scrubbable sparkline |
+| <img src="docs/screens/launch.png" width="200" alt="Launch" /> | <img src="docs/screens/motion.png" width="200" alt="Motion" /> | <img src="docs/screens/brief.png" width="200" alt="Brief" /> |
+| **Launch** — twenty countdowns, zero React renders | **Motion** — on a simulator, saying plainly that there is no sensor | **Brief** — bring your own key, verified before it is stored |
+| <img src="docs/screens/sky.png" width="200" alt="Sky" /> | <img src="docs/screens/menu.png" width="200" alt="Feature graph" /> | |
+| **Sky** — the ISS locked on, 2,319 km away | **Features** — a graph whose edges are real dependencies | |
+
+</details>
 
 - **Adopting this in an existing project** → [`docs/ADOPTING.md`](docs/ADOPTING.md),
   including what does and doesn't port from a web app.
@@ -152,6 +199,8 @@ npm run android       # build + install + launch on Android emulator
 
 npm run e2e:ios       # Maestro, against a running simulator
 npm run e2e:android   # Maestro, against a running emulator
+
+npm run capture       # regenerate docs/screens/*.png from a running simulator
 ```
 
 The first `npm run ios` / `npm run android` runs `expo prebuild` and compiles a
@@ -170,6 +219,7 @@ plugins. `npx expo prebuild --clean` regenerates them.
 | Lint | `npm run lint` | ESLint via `expo lint` |
 | Unit / component | `npm test` | Jest + `jest-expo` + React Native Testing Library |
 | End-to-end | `npm run e2e:ios` / `e2e:android` | Maestro |
+| Screenshots | `npm run capture` | Maestro (`capture` tag, excluded from E2E) |
 
 CI runs all four on every push: fast checks on Ubuntu, plus real Android emulator
 and iOS simulator E2E jobs. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).

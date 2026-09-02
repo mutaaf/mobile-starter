@@ -64,8 +64,9 @@
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "e2e:ios": "maestro test .maestro/",
-    "e2e:android": "maestro test .maestro/",
+    "e2e:ios": "maestro test --exclude-tags=capture .maestro/",
+    "e2e:android": "maestro test --exclude-tags=capture .maestro/",
+    "capture": "maestro test .maestro/capture.yaml && bash scripts/collect-screens.sh",
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm run lint && npm test",
     "test:ci": "jest --ci --coverage"
