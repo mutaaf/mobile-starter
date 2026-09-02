@@ -1,0 +1,101 @@
+{
+  "name": "mobile-starter",
+  "version": "1.0.0",
+  "summary": "React Native starter kit on Expo SDK 57, verified on real iOS and Android devices, written to be adopted by coding agents.",
+  "repository": "https://github.com/mutaaf/mobile-starter",
+  "homepage": "https://mutaaf.github.io/mobile-starter/",
+  "license": "MIT",
+  "contract": {
+    "primary": "https://raw.githubusercontent.com/mutaaf/mobile-starter/main/AGENTS.md",
+    "summary": "https://mutaaf.github.io/mobile-starter/llms.txt",
+    "note": "AGENTS.md is self-contained and binding. Read it before changing anything in a project that adopted this kit."
+  },
+  "stack": {
+    "framework": "expo",
+    "sdk": "57",
+    "reactNative": "0.86",
+    "react": "19",
+    "language": "typescript",
+    "router": "expo-router",
+    "testing": {
+      "unit": "jest + jest-expo + @testing-library/react-native",
+      "e2e": "maestro",
+      "types": "tsc --noEmit",
+      "lint": "eslint via expo lint"
+    }
+  },
+  "commands": {
+    "gate": "npm run verify",
+    "test": "npm test",
+    "typecheck": "npm run typecheck",
+    "lint": "npm run lint",
+    "runIos": "npm run ios",
+    "runAndroid": "npm run android",
+    "e2eIos": "npm run e2e:ios",
+    "e2eAndroid": "npm run e2e:android"
+  },
+  "adoption": {
+    "newApp": "npx degit mutaaf/mobile-starter my-app",
+    "template": true,
+    "afterClone": [
+      "Rename app.json: name, slug, scheme, ios.bundleIdentifier, android.package",
+      "Update appId in .maestro/*.yaml to match the new bundle identifier",
+      "Run npm run verify before changing anything"
+    ]
+  },
+  "architecture": {
+    "rule": "Screens never fetch. They call useResource(key, fetcher); the cache owns all requests.",
+    "layers": [
+      "screen",
+      "useResource",
+      "ResourceCache",
+      "CacheStore (interface)",
+      "TieredStore = MemoryStore + AsyncStorageStore"
+    ],
+    "addDataSource": [
+      "add a fetcher to src/lib/api.ts",
+      "add a key to CacheKeys",
+      "call useResource"
+    ]
+  },
+  "invariantCount": 16,
+  "dataSources": [
+    {
+      "name": "ISS position",
+      "url": "https://api.wheretheiss.at/v1/satellites/25544",
+      "auth": "none"
+    },
+    {
+      "name": "USGS earthquakes",
+      "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson",
+      "auth": "none"
+    },
+    {
+      "name": "NOAA planetary Kp",
+      "url": "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json",
+      "auth": "none"
+    },
+    {
+      "name": "Launch Library 2",
+      "url": "https://ll.thespacedevs.com/2.3.0/launches/upcoming/",
+      "auth": "none"
+    },
+    {
+      "name": "LLM providers",
+      "url": "user supplied",
+      "auth": "bring-your-own-key",
+      "providers": [
+        "anthropic",
+        "openai",
+        "gemini"
+      ]
+    }
+  ],
+  "notIncluded": [
+    "authentication",
+    "a data layer beyond the demo feeds",
+    "app store submission",
+    "real-device test farm",
+    "E2E coverage beyond two harness-proving flows"
+  ]
+}

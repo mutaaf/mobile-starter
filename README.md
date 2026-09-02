@@ -47,6 +47,10 @@ editable as code.
 Everything degrades honestly: the Motion tab detects that simulators expose no
 accelerometer and says so instead of showing frozen zeros.
 
+**Landing page:** <https://mutaaf.github.io/mobile-starter/> — with machine-readable
+[`llms.txt`](https://mutaaf.github.io/mobile-starter/llms.txt) and
+[`agents.json`](https://mutaaf.github.io/mobile-starter/agents.json) for agents.
+
 ```bash
 npx degit mutaaf/mobile-starter my-app
 cd my-app && npm install

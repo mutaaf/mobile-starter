@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>mobile-starter — a React Native kit built to be adopted by agents</title>
+<meta name="description" content="An Expo SDK 57 starter kit with a working telemetry demo, a stale-while-revalidate cache, an in-app devtools overlay, and a binding contract for coding agents." />
+
+<meta property="og:title" content="mobile-starter — a React Native kit built to be adopted by agents" />
+<meta property="og:description" content="Expo SDK 57, six live screens, an in-app devtools overlay, and an AGENTS.md contract other agents can read directly." />
+<meta property="og:type" content="website" />
+
+<!-- Machine-readable entry points, declared so an agent can find them from the page itself. -->
+<link rel="alternate" type="text/plain" href="./llms.txt" title="LLM-readable summary" />
+<link rel="alternate" type="application/json" href="./agents.json" title="Agent manifest" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --void: #08090b;
+    --void-hi: #10141a;
+    --panel: #0f1319;
+    --panel-hi: #151a22;
+    --rule: #212832;
+    --text: #e8edf2;
+    --dim: #69747f;
+    --faint: #3a434e;
+    --signal: #c6f24e;
+    --cool: #4ec8f2;
+    --alert: #ff6b4a;
+    --violet: #b36bff;
+
+    --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
+    --max: 1080px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--void);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Graticule — the same grid the app draws behind its ground track. */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 88px 88px;
+    opacity: 0.22;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 78%);
+    z-index: 0;
+  }
+
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+  .star {
+    position: absolute;
+    background: var(--text);
+    border-radius: 50%;
+    animation: twinkle var(--dur) ease-in-out infinite alternate;
+    animation-delay: var(--delay);
+  }
+  @keyframes twinkle { from { opacity: .08; } to { opacity: .55; } }
+
+  .wrap { position: relative; z-index: 1; max-width: var(--max); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------------------------------------------------------------- type */
+  .label {
+    font-size: 10px;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .label.signal { color: var(--signal); }
+
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(42px, 9vw, 92px);
+    line-height: 0.92;
+    letter-spacing: -1.5px;
+    text-transform: uppercase;
+    margin: 18px 0 0;
+  }
+  h2 {
+    font-family: var(--display);
+    font-size: clamp(24px, 4vw, 34px);
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    margin: 0 0 6px;
+  }
+  h3 { font-family: var(--mono); font-weight: 700; font-size: 15px; margin: 0 0 4px; }
+  p { color: var(--dim); margin: 0 0 14px; }
+  p strong { color: var(--text); font-weight: 500; }
+  a { color: var(--cool); text-decoration: none; border-bottom: 1px solid #4ec8f240; }
+  a:hover { border-bottom-color: var(--cool); }
+
+  /* -------------------------------------------------------------- layout */
+  section { padding: 72px 0; border-top: 1px solid var(--rule); }
+  section:first-of-type { border-top: none; }
+  .head { margin-bottom: 34px; max-width: 660px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 22px;
+  }
+
+  .grid { display: grid; gap: 14px; }
+  @media (min-width: 760px) {
+    .g2 { grid-template-columns: repeat(2, 1fr); }
+    .g3 { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  /* ---------------------------------------------------------------- hero */
+  .hero { padding: 84px 0 64px; }
+  .mark-row { display: flex; align-items: center; gap: 16px; }
+  .tagline {
+    font-size: clamp(15px, 2.2vw, 19px);
+    color: var(--dim);
+    max-width: 620px;
+    margin: 22px 0 0;
+    line-height: 1.55;
+  }
+  .tagline b { color: var(--text); font-weight: 500; }
+
+  .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 18px; border-radius: 8px;
+    font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase;
+    font-weight: 700; border: 1px solid var(--rule); color: var(--text);
+    background: var(--panel-hi);
+  }
+  .btn:hover { border-color: var(--dim); }
+  .btn.primary { background: var(--signal); color: var(--void); border-color: var(--signal); }
+  .btn.primary:hover { filter: brightness(1.08); }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 44px; }
+  .stat b {
+    display: block;
+    font-size: 26px; font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--signal);
+    line-height: 1.1;
+  }
+  .stat span { font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--dim); }
+
+  /* ------------------------------------------------------------ code box */
+  .code {
+    background: var(--panel-hi);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 12.5px;
+    color: var(--text);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.75;
+  }
+  .code .c { color: var(--faint); }
+  .code .k { color: var(--signal); }
+
+  /* -------------------------------------------------------- agents block */
+  .agents {
+    border: 1px solid #c6f24e33;
+    background: linear-gradient(180deg, #c6f24e0b, transparent 70%), var(--panel);
+    border-radius: 14px;
+    padding: 26px;
+  }
+  .endpoint {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    background: var(--void-hi);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 10px;
+  }
+  .endpoint code { font-size: 11.5px; color: var(--cool); word-break: break-all; }
+  .copy {
+    font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase;
+    border: 1px solid var(--rule); border-radius: 5px;
+    padding: 5px 10px; background: transparent; color: var(--dim);
+    font-family: var(--mono); cursor: pointer;
+  }
+  .copy:hover { color: var(--signal); border-color: var(--signal); }
+  .copy.done { color: var(--signal); border-color: var(--signal); }
+
+  /* ------------------------------------------------------------- screens */
+  .screen { display: flex; gap: 14px; align-items: flex-start; }
+  .screen .ico { flex: none; width: 26px; height: 26px; margin-top: 2px; }
+  .screen .src { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--faint); }
+  .screen p { margin: 6px 0 0; font-size: 13px; }
+
+  /* ---------------------------------------------------------------- flow */
+  .flow { display: grid; gap: 8px; font-size: 12px; }
+  .flow-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel-hi); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 11px 14px;
+  }
+  .flow-row .n {
+    flex: none; width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 10px; font-weight: 700; color: var(--void); background: var(--signal);
+  }
+  .flow-row .d { color: var(--dim); }
+  .flow-arrow { color: var(--faint); text-align: center; font-size: 14px; line-height: 1; }
+
+  /* --------------------------------------------------------------- lists */
+  ul.checks { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+  ul.checks li { display: flex; gap: 10px; font-size: 13px; color: var(--dim); }
+  ul.checks li::before { content: '✓'; color: var(--signal); flex: none; font-weight: 700; }
+  ul.checks li b { color: var(--text); font-weight: 500; }
+
+  .warn { border-left: 2px solid var(--alert); padding-left: 14px; }
+  .warn .label { color: var(--alert); }
+
+  footer {
+    border-top: 1px solid var(--rule);
+    padding: 34px 0 60px;
+    color: var(--faint);
+    font-size: 11px;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .star { animation: none; opacity: .3; }
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="stars" id="stars" aria-hidden="true"></div>
+
+<div class="wrap">
+
+  <!-- ============================================================ HERO -->
+  <header class="hero">
+    <div class="mark-row">
+      <svg width="52" height="52" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <g transform="rotate(-26 24 22)">
+          <ellipse cx="24" cy="22" rx="19" ry="8" stroke="#4EC8F2" stroke-width="3.2"/>
+        </g>
+        <path d="M13.7 26.2 A8 8 0 0 1 20 33.4" stroke="#C6F24E" stroke-width="3.9" stroke-linecap="round"/>
+        <path d="M15.1 19.3 A15 15 0 0 1 27 32.9" stroke="#C6F24E" stroke-width="3.2" stroke-linecap="round"/>
+        <path d="M16.6 12.5 A22 22 0 0 1 34 32.5" stroke="#C6F24E" stroke-width="2.6" stroke-linecap="round"/>
+        <circle cx="12" cy="34" r="3.1" fill="#C6F24E"/>
+      </svg>
+      <div>
+        <div class="label signal">Expo SDK 57 · RN 0.86 · React 19</div>
+        <div class="label">mutaaf/mobile-starter</div>
+      </div>
+    </div>
+
+    <h1>Mobile&nbsp;starter</h1>
+
+    <p class="tagline">
+      A React&nbsp;Native kit that is <b>already debugged</b>, and written to be adopted by
+      coding agents as much as by people. Six working screens against live public APIs,
+      a stale-while-revalidate cache, an in-app devtools overlay — and a contract file
+      that tells an agent exactly what it must not break.
+    </p>
+
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/mutaaf/mobile-starter">Repository →</a>
+      <a class="btn" href="#agents">For agents</a>
+      <a class="btn" href="#screens">What it demos</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>6</b><span>screens</span></div>
+      <div class="stat"><b>5</b><span>live APIs</span></div>
+      <div class="stat"><b>51</b><span>unit tests</span></div>
+      <div class="stat"><b>16</b><span>documented invariants</span></div>
+      <div class="stat"><b>2</b><span>E2E flows, both platforms</span></div>
+    </div>
+  </header>
+
+  <!-- ========================================================== AGENTS -->
+  <section id="agents">
+    <div class="head">
+      <div class="label signal">Agents for agents</div>
+      <h2>Point your agent here</h2>
+      <p>
+        The kit ships a contract, not just code. <strong>AGENTS.md</strong> is self-contained:
+        an agent working in a different repository can read that one file and apply the same
+        conventions, including the sixteen invariants that each cost real debugging time to find.
+      </p>
+    </div>
+
+    <div class="agents">
+      <div class="label">Fetch directly</div>
+
+      <div class="endpoint">
+        <code id="e1">https://raw.githubusercontent.com/mutaaf/mobile-starter/main/AGENTS.md</code>
+        <button class="copy" data-target="e1">Copy</button>
+      </div>
+      <div class="endpoint">
+        <code id="e2">https://mutaaf.github.io/mobile-starter/llms.txt</code>
+        <button class="copy" data-target="e2">Copy</button>
+      </div>
+      <div class="endpoint">
+        <code id="e3">https://mutaaf.github.io/mobile-starter/agents.json</code>
+        <button class="copy" data-target="e3">Copy</button>
+      </div>
+
+      <p style="margin-top:22px">
+        Better still, vendor it. Nested <code style="color:var(--signal)">AGENTS.md</code> files are
+        picked up automatically by most coding agents when work happens in that subtree, so once
+        <code style="color:var(--signal)">mobile/</code> exists its contract applies on its own.
+      </p>
+
+      <div class="code"><span class="c">## Mobile</span>
+
+The app in <span class="k">mobile/</span> follows the mobile-starter kit. Its conventions and
+invariants are in <span class="k">mobile/AGENTS.md</span> — read that file before changing
+anything under <span class="k">mobile/</span>, and treat its Invariants section as binding.</div>
+    </div>
+  </section>
+
+  <!-- ========================================================== ADOPT -->
+  <section id="adopt">
+    <div class="head">
+      <div class="label">Adoption</div>
+      <h2>Three ways in</h2>
+    </div>
+
+    <div class="grid g3">
+      <div class="panel">
+        <h3>New app</h3>
+        <p style="font-size:12.5px">Clone, verify, run. Green before you change a line.</p>
+        <div class="code">npx degit mutaaf/mobile-starter my-app
+cd my-app &amp;&amp; npm install
+npm run verify
+npm run ios   <span class="c"># or android</span></div>
+      </div>
+
+      <div class="panel">
+        <h3>Existing web app</h3>
+        <p style="font-size:12.5px">
+          Add a sibling and share logic, not components. Your business logic, types and API
+          clients port as-is; your view layer does not.
+        </p>
+        <div class="code">repo/
+  web/        <span class="c"># untouched</span>
+  mobile/     <span class="c"># the kit</span>
+  packages/core/  <span class="c"># shared</span></div>
+      </div>
+
+      <div class="panel">
+        <h3>Existing RN app</h3>
+        <p style="font-size:12.5px">
+          Take the conventions, not the scaffold: the jest block, the E2E flows, the CI workflow
+          and the contract.
+        </p>
+        <div class="code">AGENTS.md
+package.json <span class="c">→ jest</span>
+.maestro/
+.github/workflows/ci.yml</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================= SCREENS -->
+  <section id="screens">
+    <div class="head">
+      <div class="label">The demo</div>
+      <h2>Ground station</h2>
+      <p>
+        The scaffold is a working telemetry console, not a placeholder screen — so the harness is
+        proven against real network, real sensors and real gesture handling. Every API is
+        <strong>public, keyless and HTTPS</strong>.
+      </p>
+    </div>
+
+    <div class="grid g2">
+      <div class="panel screen">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><g transform="rotate(-26 12 12)"><ellipse cx="12" cy="12" rx="10" ry="4.4" stroke="#C6F24E" stroke-width="1.9"/></g><circle cx="12" cy="12" r="3.1" fill="#C6F24E"/></svg>
+        <div>
+          <h3>Orbit</h3>
+          <div class="src">wheretheiss.at</div>
+          <p>Live ISS position polled every 4s, with the ground track interpolated between fixes so a slow poll still reads as motion.</p>
+        </div>
+      </div>
+
+      <div class="panel screen">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M1.5 12h3.2l2.1-5.6 2.9 11.4 2.4-8.2 1.8 4.1 1.5-2.3h7.1" stroke="#C6F24E" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div>
+          <h3>Seismic</h3>
+          <div class="src">USGS · M2.5+ / 24h</div>
+          <p>Worldwide earthquake feed with magnitude-scaled bars on a fixed scale, so refreshes stay comparable.</p>
+        </div>
+      </div>
+
+      <div class="panel screen">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M4 17c0-5.2 3.4-9 8-9s8 3.8 8 9" stroke="#4EC8F2" stroke-width="1.9" stroke-linecap="round"/><path d="M7.6 18.2c0-3.6 1.9-6.4 4.4-6.4s4.4 2.8 4.4 6.4" stroke="#4EC8F2" stroke-width="1.5" stroke-linecap="round"/><path d="M3 21h18" stroke="#4EC8F2" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <div>
+          <h3>Aurora</h3>
+          <div class="src">NOAA SWPC · planetary Kp</div>
+          <p>An animated SVG gauge grown by stroke-dashoffset in a worklet, plus a <b style="color:var(--text)">scrubbable</b> 6-hour sparkline that never touches the JS thread.</p>
+        </div>
+      </div>
+
+      <div class="panel screen">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M12 2.5c2.6 2.4 4 5.6 4 9v3.2H8V11.5c0-3.4 1.4-6.6 4-9Z" stroke="#C6F24E" stroke-width="1.9" stroke-linejoin="round"/><circle cx="12" cy="10" r="1.9" fill="#C6F24E"/><path d="M10.4 18.6v2.6M13.6 18.6v2.6M12 19.4V22" stroke="#C6F24E" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <div>
+          <h3>Launch</h3>
+          <div class="src">Launch Library 2</div>
+          <p>Twenty live countdowns ticking from one shared UI-thread clock — at zero React renders.</p>
+        </div>
+      </div>
+
+      <div class="panel screen">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><g transform="rotate(-16 10 12)"><rect x="3.6" y="3.4" width="12.8" height="17.2" rx="3.4" stroke="#C6F24E" stroke-width="1.9"/><circle cx="12.6" cy="9.4" r="2" fill="#C6F24E"/></g><path d="M20 8.6c1.5 2.2 1.5 4.6 0 6.8" stroke="#C6F24E" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <div>
+          <h3>Motion</h3>
+          <div class="src">On-device sensors</div>
+          <p>Accelerometer and gyroscope driving a spring-damped bubble level, haptics on crossing level, and a pan + pinch gesture card.</p>
+        </div>
+      </div>
+
+      <div class="panel screen">
+        <svg class="ico" viewBox="0 0 24 24" fill="none"><path d="M5.5 5.5 12 12M5.5 12H12M5.5 18.5 12 12" stroke="#B36BFF" stroke-width="1.6" stroke-linecap="round"/><path d="M12 12h6.5" stroke="#B36BFF" stroke-width="1.9" stroke-linecap="round"/><circle cx="4.4" cy="5.5" r="1.7" fill="#B36BFF"/><circle cx="4.4" cy="12" r="1.7" fill="#B36BFF"/><circle cx="4.4" cy="18.5" r="1.7" fill="#B36BFF"/><circle cx="12" cy="12" r="2.6" stroke="#B36BFF" stroke-width="1.9"/><circle cx="19.8" cy="12" r="1.7" fill="#B36BFF"/></svg>
+        <div>
+          <h3>Brief <span style="color:var(--violet);font-size:10px;letter-spacing:1px">BYO KEY</span></h3>
+          <div class="src">Anthropic · OpenAI · Gemini</div>
+          <p>Fuses all four feeds <b style="color:var(--text)">plus the handset's own tilt and clock</b> into one situation report. Your key, held in the device keystore.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ CACHE -->
+  <section id="architecture">
+    <div class="head">
+      <div class="label">Architecture</div>
+      <h2>One way through</h2>
+      <p>
+        Screens never fetch. They subscribe to a key, and every request goes through one place
+        that owns stale-while-revalidate, single-flight dedup, persistence and instrumentation.
+        A cold start paints from the last session while the network catches up.
+      </p>
+    </div>
+
+    <div class="grid g2">
+      <div class="panel">
+        <div class="flow">
+          <div class="flow-row"><span class="n">1</span><span><b>screen</b> <span class="d">— useResource(key, fetcher)</span></span></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><span class="n">2</span><span><b>ResourceCache</b> <span class="d">— SWR, dedup, events, stats</span></span></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><span class="n">3</span><span><b>CacheStore</b> <span class="d">— interface, not an implementation</span></span></div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-row"><span class="n">4</span><span><b>TieredStore</b> <span class="d">— memory in front of disk</span></span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>In-app devtools</h3>
+        <p style="font-size:12.5px">
+          Drag the badge, or tap to open an inspector: live cache entries with per-key invalidate,
+          release and evict; a rolling event timeline; hit rate and fetch timings; and network
+          injection — force offline, fail the next request, add latency.
+        </p>
+        <p style="font-size:12.5px">
+          Injection goes through the cache, so it applies to every screen at once and no call site
+          knows it exists.
+        </p>
+        <div class="warn" style="margin-top:18px">
+          <div class="label">Measured, not assumed</div>
+          <p style="font-size:12px;margin-top:6px">
+            <code style="color:var(--text)">useFrameCallback</code> is <b>not</b> a vsync counter —
+            it fired ~8×/sec while <code style="color:var(--text)">dumpsys gfxinfo</code> reported a
+            28&nbsp;ms median frame. The badge shows JS-thread FPS via rAF, which is honest; the
+            worklet tick rate is labelled as exactly that.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================== VERIFY -->
+  <section id="verified">
+    <div class="head">
+      <div class="label">Regression gates</div>
+      <h2>What green means</h2>
+    </div>
+
+    <div class="grid g2">
+      <div class="panel">
+        <ul class="checks">
+          <li><b>51 unit tests</b> — cache semantics, API mapping, provider transport, key handling</li>
+          <li><b>TypeScript strict</b> and <b>ESLint</b> with the React Compiler rules</li>
+          <li><b>2 Maestro flows</b> — one structural, one that hits all four live APIs</li>
+          <li><b>CI on every push</b> — fast checks, plus real Android emulator and iOS simulator jobs</li>
+        </ul>
+        <div class="code" style="margin-top:18px">npm run verify   <span class="c"># the gate: types + lint + unit</span></div>
+      </div>
+
+      <div class="panel">
+        <h3>Sixteen invariants, each with its symptom</h3>
+        <p style="font-size:12.5px">
+          Written down so a regression is recognised rather than re-derived. A sample:
+        </p>
+        <ul class="checks">
+          <li><b>render is async</b> in RNTL v14 — forgetting <code>await</code> makes every query claim render was never called</li>
+          <li><b>A helper inside a worklet stays a JS function</b> — the UI runtime throws on it</li>
+          <li><b>Start animations in effects, never useMemo</b> — React may skip a memo body</li>
+          <li><b>Keys never touch the cache</b> — that tier is plain text and the devtools dumps it</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ SCOPE -->
+  <section id="scope">
+    <div class="head">
+      <div class="label">Honest scope</div>
+      <h2>What it is not</h2>
+      <p>
+        No auth, no data layer beyond the demo feeds, no store submission. The E2E suite is two
+        short flows proving the harness works, not coverage. CI runs on emulators and simulators
+        only — no real-device farm. A device-installable <strong>IPA needs an Apple Developer
+        account</strong>; a sideloadable APK builds locally with no account at all.
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    <span>MIT · built with Claude Code</span>
+    <span><a href="https://github.com/mutaaf/mobile-starter">github.com/mutaaf/mobile-starter</a></span>
+  </footer>
+</div>
+
+<script>
+  // Deterministic starfield — same seed as the app, so the two look related.
+  (function () {
+    var host = document.getElementById('stars');
+    var seed = 20260901;
+    function rand() {
+      seed = (seed + 0x6d2b79f5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < 60; i++) {
+      var depth = 0.35 + rand() * 0.65;
+      var s = document.createElement('div');
+      s.className = 'star';
+      s.style.left = (rand() * 100) + '%';
+      s.style.top = (rand() * 100) + '%';
+      s.style.width = s.style.height = (1 + depth * 2.2).toFixed(1) + 'px';
+      s.style.setProperty('--dur', (2.2 + rand() * 3.8).toFixed(2) + 's');
+      s.style.setProperty('--delay', (rand() * 3).toFixed(2) + 's');
+      frag.appendChild(s);
+    }
+    host.appendChild(frag);
+  })();
+
+  // Copy buttons for the agent endpoints.
+  document.querySelectorAll('.copy').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var el = document.getElementById(btn.dataset.target);
+      navigator.clipboard.writeText(el.textContent.trim()).then(function () {
+        var was = btn.textContent;
+        btn.textContent = 'Copied';
+        btn.classList.add('done');
+        setTimeout(function () { btn.textContent = was; btn.classList.remove('done'); }, 1400);
+      });
+    });
+  });
+</script>
+</body>
+</html>
